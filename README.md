@@ -23,8 +23,8 @@ The following operators are supported and behave like in rust:
 * `!=`
 
 The following logics are supported and behave like in rust:
-* `and`
-* `or`
+* `and`, `&&`
+* `or`, `||`
 
 The following [Value]s can be compared:
 * `Value::Numeric` - maps internally to a f64 and has `From`-implementations ranging from `u8` to `f64`
