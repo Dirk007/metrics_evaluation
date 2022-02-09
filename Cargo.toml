@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "puzzle"
+name = "metrics_evaluation"
 path = "src/lib.rs"
 
 [dependencies]
@@ -22,6 +22,6 @@ async-trait = { version = "0.1.52", optional = true }
 async-recursion = { version = "1.0.0", optional = true }
 
 [features]
-default = ["async", "hashmap"]
+default = ["hashmap"]
 hashmap = []
 async = ["tokio", "async-trait", "async-recursion"]

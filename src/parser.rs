@@ -115,7 +115,7 @@ fn match_comparison(input: &str) -> IResult<&str, Comparison> {
 }
 
 /// ```
-/// use puzzle::{
+/// use metrics_evaluation::{
 ///     compare::{Logic, Operator},
 ///     parser::match_block,
 /// };
@@ -174,8 +174,8 @@ fn decode_logic(logics: Vec<&str>) -> Option<Logic> {
 
 /// Matches one comparison with optional logic
 /// ```
-/// use puzzle::parser::match_comparisons;
-/// use puzzle::compare::{Operator, Logic};
+/// use metrics_evaluation::parser::match_comparisons;
+/// use metrics_evaluation::compare::{Operator, Logic};
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 and foo < 2").unwrap();
 /// assert_eq!(cmp.name, "hello");
