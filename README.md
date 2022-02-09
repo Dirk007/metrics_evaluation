@@ -14,11 +14,25 @@ TBD: Add this crate to your cargo.tml
 
 Implement a [Resolver](src/resolver.rs) that can deliver a [Value](src/value.rs) for the give lookup. For easy of use and pure laziness there is already a `HashMap`-implementation for `Resolver` if the `hashmap`-feature is active - however this leads to a copy of the converted `Value` ATM.
 
+The following operators are supported and behave like in rust:
+* `>`
+* `<`
+* `>=`
+* `<=`
+* `==`
+* `!=`
+
+The following logics are supported and behave like in rust:
+* `and`
+* `or`
+
 The following [Value]s can be compared:
 * `Value::Numeric` - maps internally to a f64 and has `From`-implementations ranging from `u8` to `f64`
 * `Value::String` - a string literal
 * `Value::Time` - maps a [NaiveTime](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html) and the string-representation must match one of the NaiveTime's ::from(&str) implementations.
 * `Value::Duration` a string that is a string [humantime](https://docs.rs/humantime/latest/humantime/) representing a duration
+
+Use it in the form [Name] [Operator] Value [[Logic]...]
 
 ## Feature-flags
 * `async` - use [AsyncResolver] and [AsyncSolver] over [Resolver] and [Solver] cases a [Resolver] needs async functionality (database)
