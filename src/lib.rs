@@ -11,9 +11,11 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "async")] {
         pub mod async_resolver;
         pub mod async_solver;
+        pub use async_resolver::AsyncResolver;
     } else {
         pub mod resolver;
         pub mod solver;
+        pub use resolver::Resolver;
     }
 }
 
