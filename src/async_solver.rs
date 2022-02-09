@@ -37,24 +37,26 @@ pub async fn solve_tree(sequence: &Sequence, resolver: &impl AsyncResolver) -> R
 }
 
 #[cfg(test)]
-use std::collections::HashMap;
-
+#[cfg(feature = "async")]
 #[tokio::test]
 async fn test_solve_async() -> Result<()> {
-    use crate::evaluate;
+    use std::collections::HashMap;
+
+    use crate::{evaluate_async, MapResolver};
 
     let mut values = HashMap::new();
     values.insert("a", 1);
     values.insert("b", 2);
     values.insert("c", 3);
     values.insert("d", 4);
+    let values: MapResolver = values.into();
 
-    assert_eq!(evaluate("a < 99", &values).await?, true);
-    assert_eq!(evaluate("a > 2", &values).await?, false);
-    assert_eq!(evaluate("b <= 2", &values).await?, true);
-    assert_eq!(evaluate("c >= 3", &values).await?, true);
+    assert_eq!(evaluate_async("a < 99", &values).await?, true);
+    assert_eq!(evaluate_async("a > 2", &values).await?, false);
+    assert_eq!(evaluate_async("b <= 2", &values).await?, true);
+    assert_eq!(evaluate_async("c >= 3", &values).await?, true);
     assert_eq!(
-        evaluate(
+        evaluate_async(
             "a == 4711 || ((b == 42 || b == 2) && (c == 3 && c == 4))",
             &values
         )

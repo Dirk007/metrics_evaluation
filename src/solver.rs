@@ -38,6 +38,7 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
+    use crate::MapResolver;
 
     #[test]
     fn test_solve_duration() -> Result<()> {
@@ -45,6 +46,7 @@ mod tests {
 
         let mut values = HashMap::new();
         values.insert("a", chrono::Duration::days(1).to_std()?);
+        let values = MapResolver::from(values);
 
         assert_eq!(evaluate(r#"a < "1 d 1h""#, &values)?, true);
         assert_eq!(evaluate(r#"a > "2h 5min""#, &values)?, true);
@@ -62,6 +64,7 @@ mod tests {
         values.insert("b", 2);
         values.insert("c", 3);
         values.insert("d", 4);
+        let values = MapResolver::from(values);
 
         assert_eq!(evaluate("a < 99", &values)?, true);
         assert_eq!(evaluate("a > 2", &values)?, false);
