@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use metrics_evaluation::{evaluate, Value};
+use metrics_evaluation::{evaluate, MapResolver, Value};
 
 fn main() -> Result<()> {
     let mut values = HashMap::new();
@@ -11,6 +11,7 @@ fn main() -> Result<()> {
         "working",
         Value::Duration(chrono::Duration::hours(2).to_std().unwrap()),
     );
+    let values: MapResolver = values.into();
 
     assert_eq!(
         evaluate(
