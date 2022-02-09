@@ -8,7 +8,7 @@ Give this `Resolver` to the [evaluate](src/lib.rs) function and call it with a s
 ## Usage
 TBD: Add this crate to your cargo.tml
 
-Implement a [Resolver](src/resolver.rs) that can deliver a [Value](src/value.rs)-reference for the give lookup (or none if there is no value for this). For the ease of use and pure laziness there is a type `MapResolver` wich is a `Resolver`and can be formed fropm `HashMap<K: AsRef<str>, V: Into<Value>>` (see tests).
+Implement a [Resolver](src/resolver.rs) that can deliver a [Value](src/value.rs)-reference for the give lookup (or none if there is no value for this). For the ease of use and pure laziness there is a type `MapResolver` wich is a `Resolver`and can be formed from `HashMap<K: AsRef<str>, V: Into<Value>>` (see tests).
 
 The following operators are supported and behave like in rust:
 * `>`
@@ -31,7 +31,7 @@ The following [Value]s can be compared:
 Use it in the form [Name] [Operator] Value [[Logic]...]
 
 ## Feature-flags
-* `async` - additionally have [AsyncResolver] and [AsyncSolver] over [Resolver] and [Solver] for cases a [Resolver] needs async functionality (async database for example). Use `evaluate_async' in this case.
+* `async` - additionally have [AsyncResolver] and [AsyncSolver] over [Resolver] and [Solver] for cases a [Resolver] needs async functionality (async database for example). Use `evaluate_async' in this case. `MapResolver` is only available in test-configuration here (as it makes no sense to have such in production).
 
 ## Easy example
 See [lib.rs] tests or use it like this
