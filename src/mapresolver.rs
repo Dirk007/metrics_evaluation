@@ -2,8 +2,10 @@ use std::{collections::HashMap, convert::From};
 
 use crate::{resolver::Resolver, value::Value};
 
-/// Abstraction to use a [HashMap] as a resolver by converting the [HashMap] into a [MapResolver].
-/// To make this possible, [From<AsRef<str>, V>] is implememnted for each V that is [Into<Value>]
+/// Abstraction to use a [HashMap] as a resolver by converting the [HashMap] into a [MapResolver], which implements [Resolver].
+/// To make this possible, [From] (AsRef(str), V) is implememnted for each V that is [Into]::[Value].
+/// In other words: a HashMap containing a key that is [AsRef]::[str] and a value-type that can be converted to
+/// a [Value] ([Value]::[From]::V) can be used as a [Resolver].
 pub struct MapResolver(HashMap<String, Value>);
 
 impl<K, V> From<HashMap<K, V>> for MapResolver

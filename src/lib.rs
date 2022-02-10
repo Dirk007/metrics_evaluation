@@ -34,7 +34,7 @@ pub use value::Value;
 /// This always parses the `sequence`-string, generates a [Sequence] and evaluats it using the given [Resolver].
 /// Use this if the input-sequence is changing on the same logic. To have a better performing solution where
 /// input-sequences do not change and where you just want to check a given logic against changing metrics, save the
-/// output of [parse_tree] and throw it towards a chaning [Resolver] in a [solve_tree] when needed.
+/// output of [parse_tree] and throw it towards a value-changing [Resolver] in a [solve_tree] when needed.
 pub fn evaluate<'a>(
     sequence: impl AsRef<str>,
     resolver: &'a impl resolver::Resolver,
