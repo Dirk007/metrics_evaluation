@@ -203,7 +203,9 @@ pub fn match_comparisons(input: &str) -> IResult<&str, (Comparison, Option<Logic
     Ok((rest, (comparison, logic)))
 }
 
-/// Parse `input` recursively and produce a [Sequence] from all children
+/// Parse `input` recursively and produce a [Sequence] from all children.
+/// This [Sequence] can be thrown against a [crate::solver::solve_tree] using a [crate::resolver::Resolver] to solve the `input`.
+/// Use [crate::evaluate] to have an already implemented combination.
 pub fn parse_tree(input: impl AsRef<str>) -> Result<Sequence> {
     let mut rest: &str = input.as_ref();
     let mut results: Sequence = Sequence::new();
