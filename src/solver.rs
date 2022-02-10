@@ -14,6 +14,8 @@ pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bo
     Ok(value.compare(&comparison.value, comparison.operator))
 }
 
+/// Solve a [Sequence] using the given 'resolver' to a final [bool].
+/// In practice, this function throws a sequence of comparisons against a given [Resolver] to evaluate a comparison to true or false.
 pub fn solve_tree(sequence: &Sequence, resolver: &impl Resolver) -> Result<bool> {
     let mut result = true;
 
