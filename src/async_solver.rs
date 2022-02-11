@@ -3,11 +3,14 @@ use async_recursion::async_recursion;
 
 use crate::{
     async_resolver::AsyncResolver,
-    compare::{Compareable, Comparison, Logic},
+    compare::{Compareable, ComparisonType, Logic, ValueComparison, VariableComparison},
     sequence::{Entity, Sequence},
 };
 
-pub async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -> Result<bool> {
+async fn solve_one_const(
+    comparison: &ValueComparison,
+    resolver: &impl AsyncResolver,
+) -> Result<bool> {
     let value = resolver
         .resolve(&comparison.name)
         .await
@@ -16,13 +19,35 @@ pub async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -
     Ok(value.compare(&comparison.value, comparison.operator))
 }
 
+async fn solve_one_var(
+    comparison: &VariableComparison,
+    resolver: &impl AsyncResolver,
+) -> Result<bool> {
+    let lhs = resolver
+        .resolve(&comparison.lhs)
+        .await
+        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.lhs))?;
+
+    let rhs = resolver
+        .resolve(&comparison.rhs)
+        .await
+        .ok_or_else(|| anyhow!("Unable to resolve rhs '{}'", comparison.rhs))?;
+
+    Ok(lhs.compare(&rhs, comparison.operator))
+}
+
 #[async_recursion(?Send)]
 pub async fn solve_tree(sequence: &Sequence, resolver: &impl AsyncResolver) -> Result<bool> {
     let mut result = true;
 
     for entry in sequence {
         let (child_result, logic) = match entry {
-            Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver).await?, logic),
+            Entity::Comparison(ComparisonType::Value(cmp), logic) => {
+                (solve_one_const(&cmp, resolver).await?, logic)
+            }
+            Entity::Comparison(ComparisonType::Variable(cmp), logic) => {
+                (solve_one_var(&cmp, resolver).await?, logic)
+            }
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver).await?, logic),
         };
 

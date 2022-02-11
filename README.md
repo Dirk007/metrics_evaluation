@@ -1,7 +1,9 @@
 # metrics_evaluation
 `metrics_evaluation` is a simple text parser that evaluates a given logic against a metrics-resolver resulting in a single `bool`-result.
-It can be used for example to evaluate named IoT-metrics against a given logic to trigger or not to trigger an action if the result of [evaluate](src/lib.rs) results to `true`.
-The format of the input is equal to the `if`-style of rust (no initial braces needed).
+
+It can be used for example to evaluate named IoT-metrics against a given logic to trigger or not to trigger an action if the result of [evaluate](src/lib.rs) results to `true`. The format of the input is equal to the `if`-style of rust (no initial braces needed).
+
+It is possible to evaluate comparisons of variables against fixes values or variables against other variables.
 
 Give this `Resolver` to the [evaluate](src/lib.rs) function and call it with a simple text-evaluation as you would do to check if a given value evaluates to true|false in rust. For example: `foo == 42 && bar < 2 || (baz == true)`.
 
@@ -43,8 +45,9 @@ use metrics_evaluation::{evaluate, MapResolver, Value};
 
 fn main() -> Result<()> {
     let mut values = HashMap::new();
-    values.insert("temp", Value::Numeric(10.0));
-    values.insert("humidity", Value::Numeric(80.0));
+    values.insert("room1.temp", Value::Numeric(20.0));
+    values.insert("room2.temp", Value::Numeric(22.0));
+    values.insert("room1.humidity", Value::Numeric(80.0));
     values.insert(
         "working",
         Value::Duration(chrono::Duration::hours(2).to_std().unwrap()),
@@ -53,9 +56,14 @@ fn main() -> Result<()> {
 
     assert_eq!(
         evaluate(
-            r#"(temp > 1 && humidity <= 80) || working > "1h 5min""#,
+            r#"(room1.temp > 1 && room1.humidity <= 80) || working > "1h 5min""#,
             &values
         )?,
+        true
+    );
+
+    assert_eq!(
+        evaluate(r#"room2.temp > room1.temp && room2.temp < 25"#, &values)?,
         true
     );
 

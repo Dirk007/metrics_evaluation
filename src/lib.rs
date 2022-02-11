@@ -1,12 +1,13 @@
 //! This crate provides a small-foorprint solution to evaluate comparison-texts against given metric-values - for example to evaluate
 //! IoT-Triggers against a collection of comparisons ([Sequence] here).
 //!
-//! The comparisons can be written like normal rust-code ("foo > 2 && bar != 42 || (baz == 47111 && barg <= 99)"). Comparisons
-//! can be made against String, Numeric (internally [f64]), Time (internally [chrono::NaiveTime]) and [chrono::Duration] (represented in humantime).
+//! The comparisons can be written like normal rust-code ("foo > 2 && bar != 42 || (baz == 47111 && barg <= 99) && foo >= bar").
+//! Comparisons can be made against [Value::String], [Value::Numeric] (internally [f64]), [Value::Time] (internally [chrono::NaiveTime]) and [Value::Duration] as [chrono::Duration]
+//! (represented in [humantime]) and other variable-names.
 //!
 //! Value-Lookup is made through a given [Resolver]-trait internally so you are open to use what ever you like in the background.
 //! For the ease of use, an `crate::evaluate` function is implemented which just takes a string and compares using a given resolver.
-//! To have a more performant usage of this crate, use [crate::parse_tree] once with a call to [crate::solve_tree] when needed.
+//! To have a more performant usage of this crate, use [crate::parse_tree] once with a call to [crate::solve_tree] periodically or when needed.
 
 use anyhow::Result;
 
