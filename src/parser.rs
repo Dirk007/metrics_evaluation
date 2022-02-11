@@ -16,7 +16,7 @@ use nom::{
 use parse_hyperlinks::take_until_unbalanced;
 
 use crate::{
-    compare::{Comparison, Logic, Operator},
+    compare::{ComparisonType, Logic, Operator, ValueComparison, VariableComparison},
     sequence::{Entity, Sequence},
     value::Value,
 };
@@ -37,8 +37,8 @@ fn match_optional_logic(input: &str) -> IResult<&str, Vec<&str>> {
 
 fn match_identifier(input: &str) -> IResult<&str, &str> {
     let (rest, m) = recognize(pair(
-        alt((alpha1, tag("."))),
-        many0(alt((alphanumeric1, tag(".")))),
+        alt((alpha1, tag("."), tag("_"))),
+        many0(alt((alphanumeric1, tag("."), tag("_")))),
     ))(input)?;
     Ok((rest, m))
 }
@@ -77,7 +77,7 @@ fn match_string_type(input: &str) -> IResult<&str, Value> {
     Ok((rest, value))
 }
 
-fn match_nom_value(input: &str) -> IResult<&str, Value> {
+fn match_value_type(input: &str) -> IResult<&str, Value> {
     let (rest, value) = alt((match_value, match_string_type))(input)?;
     Ok((rest, value))
 }
@@ -103,13 +103,31 @@ fn match_compare_op(input: &str) -> IResult<&str, Operator> {
     ))(input)
 }
 
-fn match_comparison(input: &str) -> IResult<&str, Comparison> {
+fn match_value_comparison(input: &str) -> IResult<&str, ComparisonType> {
     let (rest, (identifier, op, value)) =
-        tuple((match_identifier, match_compare_op, match_nom_value))(input)?;
+        tuple((match_identifier, match_compare_op, match_value_type))(input)?;
 
-    let comparison: Comparison = (identifier, op, value)
+    let comparison: ValueComparison = (identifier, op, value)
         .try_into()
         .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?;
+
+    Ok((rest, ComparisonType::Value(comparison)))
+}
+
+fn match_variable_comparison(input: &str) -> IResult<&str, ComparisonType> {
+    let (rest, (lhs, op, rhs)) =
+        tuple((match_identifier, match_compare_op, match_identifier))(input)?;
+
+    let comparison: VariableComparison = (lhs, op, rhs)
+        .try_into()
+        .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?;
+
+    Ok((rest, ComparisonType::Variable(comparison)))
+}
+
+fn match_comparison(input: &str) -> IResult<&str, ComparisonType> {
+    let (rest, comparison) =
+        match_value_comparison(input).or_else(|_| match_variable_comparison(input))?;
 
     Ok((rest, comparison))
 }
@@ -175,27 +193,33 @@ fn decode_logic(logics: Vec<&str>) -> Option<Logic> {
 /// Matches one comparison with optional logic
 /// ```
 /// use metrics_evaluation::parser::match_comparisons;
-/// use metrics_evaluation::compare::{Operator, Logic};
+/// use metrics_evaluation::compare::{Operator, Logic, ComparisonType};
+/// use metrics_evaluation::value::Value;
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 and foo < 2").unwrap();
-/// assert_eq!(cmp.name, "hello");
-/// assert_eq!(cmp.operator, Operator::Greater);
-/// assert_eq!(cmp.value, 1.into());
-/// assert_eq!(logic, None);
+/// assert_eq!(cmp, ComparisonType::from(("hello", Operator::Greater, Value::from(1))));
 /// assert_eq!(rest, " and foo < 2");
-/// let (rest, (cmp, logic)) = match_comparisons(rest).unwrap();
-/// assert_eq!(cmp.name, "foo");
-/// assert_eq!(cmp.operator, Operator::Less);
-/// assert_eq!(cmp.value, 2.into());
-/// assert_eq!(logic, Some(Logic::And));
-
-/// let (rest, (cmp, logic)) = match_comparisons(r#"foo == "bar""#).unwrap();
-/// assert_eq!(cmp.name, "foo");
-/// assert_eq!(cmp.operator, Operator::Equal);
-/// assert_eq!(cmp.value, "bar".into());
 /// assert_eq!(logic, None);
+///
+/// let (rest, (cmp, logic)) = match_comparisons(rest).unwrap();
+/// assert_eq!(cmp, ComparisonType::from(("foo", Operator::Less, Value::from(2))));
+/// assert_eq!(logic, Some(Logic::And));
+///
+/// let (rest, (cmp, logic)) = match_comparisons(r#"foo == "bar""#).unwrap();
+/// assert_eq!(cmp, ComparisonType::from(("foo", Operator::Equal, Value::from("bar"))));
+/// assert_eq!(logic, None);
+///
+/// let (rest, (cmp, logic)) = match_comparisons("hello > foo or bar == foo").unwrap();
+/// assert_eq!(cmp, ComparisonType::from(("hello", Operator::Greater, "foo")));
+/// assert_eq!(rest, " or bar == foo");
+/// assert_eq!(logic, None);
+///
+/// let (rest, (cmp, logic)) = match_comparisons(rest).unwrap();
+/// assert_eq!(cmp, ComparisonType::from(("bar", Operator::Equal, "foo")));
+/// assert_eq!(logic, Some(Logic::Or));
+
 /// ```
-pub fn match_comparisons(input: &str) -> IResult<&str, (Comparison, Option<Logic>)> {
+pub fn match_comparisons(input: &str) -> IResult<&str, (ComparisonType, Option<Logic>)> {
     let (rest, (logics, comparison)) = tuple((match_optional_logic, match_comparison))(input)?;
 
     let logic = decode_logic(logics);
