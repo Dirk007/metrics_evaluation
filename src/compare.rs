@@ -26,41 +26,40 @@ pub trait Compareable {
 }
 
 /// Defines if a comparison is against a value or against another variable
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ComparisonType {
     /// A comparison of a variable against a fixed value
-    Value(Value),
+    Value(Value, Vec<Calculation>),
     /// A comparison of a variable against an other variable
-    Variable(String),
+    Variable(String, Vec<Calculation>),
+}
+
+impl ComparisonType {
+    pub fn with_calculation(&mut self, calc: Calculation) {
+        match self {
+            Self::Value(_, calcs) => calcs.push(calc),
+            Self::Variable(_, calcs) => calcs.push(calc),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Comparison {
     /// Name of the variable
-    pub name: String,
+    pub lhs: ComparisonType,
     /// [Operator] to use for the comparison
     pub operator: Operator,
     /// Thing to compare the content of `name` to
-    pub comparison_type: ComparisonType,
-    /// Optional arithmetics on rhs
-    pub calculations: Vec<Calculation>,
-}
-
-impl Comparison {
-    pub fn with_calculation(mut self, calc: Calculation) -> Self {
-        self.calculations.push(calc);
-        self
-    }
+    pub rhs: ComparisonType,
 }
 
 /// Triplet to [ValueComparison] conversion
 impl From<(&str, Operator, Value)> for Comparison {
     fn from((name, operator, value): (&str, Operator, Value)) -> Self {
         Self {
-            name: name.into(),
+            lhs: ComparisonType::Variable(name.into(), Vec::new()),
             operator,
-            comparison_type: ComparisonType::Value(value),
-            calculations: Vec::new(),
+            rhs: ComparisonType::Value(value, Vec::new()),
         }
     }
 }
@@ -69,10 +68,9 @@ impl From<(&str, Operator, Value)> for Comparison {
 impl From<(&str, Operator, &str)> for Comparison {
     fn from((name, operator, rhs): (&str, Operator, &str)) -> Self {
         Self {
-            name: name.into(),
+            lhs: ComparisonType::Variable(name.into(), Vec::new()),
             operator,
-            comparison_type: ComparisonType::Variable(rhs.into()),
-            calculations: Vec::new(),
+            rhs: ComparisonType::Variable(rhs.into(), Vec::new()),
         }
     }
 }

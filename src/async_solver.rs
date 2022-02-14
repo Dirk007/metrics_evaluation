@@ -3,25 +3,49 @@ use async_recursion::async_recursion;
 
 use crate::{
     async_resolver::AsyncResolver,
+    calculate::{Calculateable, Calculation},
     compare::{Compareable, Comparison, ComparisonType, Logic},
     sequence::{Entity, Sequence},
+    value::Value,
 };
 
-async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -> Result<bool> {
-    let lhs = resolver
-        .resolve(&comparison.name)
-        .await
-        .ok_or_else(|| anyhow!("Unable to resolve '{}'", comparison.name))?;
+async fn produce_final_value(
+    value: Value,
+    calculations: &Vec<Calculation>,
+    resolver: &impl AsyncResolver,
+) -> Result<Value> {
+    let mut init = value;
+    for ref item in calculations {
+        let (v, a) = match item {
+            Calculation::Value(v, op) => (Some(v), op),
+            Calculation::Variable(name, op) => (resolver.resolve(name).await, op),
+        };
 
-    let rhs = match comparison.comparison_type {
-        ComparisonType::Value(ref value) => Ok(value),
-        ComparisonType::Variable(ref rhs) => resolver
-            .resolve(rhs)
-            .await
-            .ok_or_else(|| anyhow!("Unable to resolve variable '{}'", rhs)),
-    }?;
+        let v = v.ok_or_else(|| anyhow!("Unable to resolve variables"))?;
 
-    Ok(lhs.compare(rhs, comparison.operator))
+        init = init.calculate(v, *a)?;
+    }
+
+    Ok(init)
+}
+
+async fn resolve_var(comparison: &ComparisonType, resolver: &impl AsyncResolver) -> Result<Value> {
+    let (value, calc) = match comparison {
+        ComparisonType::Value(ref value, ref calculations) => (Some(value), calculations),
+        ComparisonType::Variable(ref lhs, ref calculations) => {
+            (resolver.resolve(lhs).await, calculations)
+        }
+    };
+
+    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs"))?;
+    Ok(produce_final_value(value.clone(), calc, resolver).await?)
+}
+
+pub async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -> Result<bool> {
+    let lhs = resolve_var(&comparison.lhs, resolver).await?;
+    let rhs = resolve_var(&comparison.rhs, resolver).await?;
+
+    Ok(lhs.compare(&rhs, comparison.operator))
 }
 
 #[async_recursion(?Send)]

@@ -8,7 +8,7 @@ use crate::{
     Calculateable, Calculation,
 };
 
-fn produce_final_rhs(
+fn produce_final_value(
     value: Value,
     calculations: &Vec<Calculation>,
     resolver: &impl Resolver,
@@ -28,19 +28,23 @@ fn produce_final_rhs(
     Ok(init)
 }
 
+fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<Value> {
+    let (value, calc) = match comparison {
+        ComparisonType::Value(ref value, ref calculations) => (Some(value), calculations),
+        ComparisonType::Variable(ref lhs, ref calculations) => {
+            (resolver.resolve(lhs), calculations)
+        }
+    };
+
+    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs"))?;
+    Ok(produce_final_value(value.clone(), calc, resolver)?)
+}
+
 pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
-    let lhs = resolver
-        .resolve(&comparison.name)
-        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.name))?;
-
-    let rhs = match comparison.comparison_type {
-        ComparisonType::Value(ref value) => Ok(value),
-        ComparisonType::Variable(ref rhs) => resolver
-            .resolve(rhs)
-            .ok_or_else(|| anyhow!("Unable to resolve rhs variable '{}'", rhs)),
-    }?;
-
-    let rhs = produce_final_rhs(rhs.clone(), &comparison.calculations, resolver)?;
+    // FIXME: REMOVE
+    println!("{:?}", comparison);
+    let lhs = resolve_var(&comparison.lhs, resolver)?;
+    let rhs = resolve_var(&comparison.rhs, resolver)?;
 
     Ok(lhs.compare(&rhs, comparison.operator))
 }
@@ -87,6 +91,7 @@ mod tests {
         assert_eq!(evaluate(r#"a == b - 1"#, &values)?, true);
         assert_eq!(evaluate(r#"b == a + a"#, &values)?, true);
         assert_eq!(evaluate(r#"a < b"#, &values)?, true);
+        assert_eq!(evaluate(r#"a + 2 == b + 1"#, &values)?, true);
         assert_eq!(evaluate(r#"a >= b"#, &values)?, false);
         assert_eq!(evaluate(r#"b == a"#, &values)?, false);
         assert_eq!(evaluate(r#"b > a"#, &values)?, true);
