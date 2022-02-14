@@ -3,37 +3,25 @@ use async_recursion::async_recursion;
 
 use crate::{
     async_resolver::AsyncResolver,
-    compare::{Compareable, ComparisonType, Logic, ValueComparison, VariableComparison},
+    compare::{Compareable, Comparison, ComparisonType, Logic},
     sequence::{Entity, Sequence},
 };
 
-async fn solve_one_const(
-    comparison: &ValueComparison,
-    resolver: &impl AsyncResolver,
-) -> Result<bool> {
-    let value = resolver
+async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -> Result<bool> {
+    let lhs = resolver
         .resolve(&comparison.name)
         .await
         .ok_or_else(|| anyhow!("Unable to resolve '{}'", comparison.name))?;
 
-    Ok(value.compare(&comparison.value, comparison.operator))
-}
+    let rhs = match comparison.comparison_type {
+        ComparisonType::Value(ref value) => Ok(value),
+        ComparisonType::Variable(ref rhs) => resolver
+            .resolve(rhs)
+            .await
+            .ok_or_else(|| anyhow!("Unable to resolve variable '{}'", rhs)),
+    }?;
 
-async fn solve_one_var(
-    comparison: &VariableComparison,
-    resolver: &impl AsyncResolver,
-) -> Result<bool> {
-    let lhs = resolver
-        .resolve(&comparison.lhs)
-        .await
-        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.lhs))?;
-
-    let rhs = resolver
-        .resolve(&comparison.rhs)
-        .await
-        .ok_or_else(|| anyhow!("Unable to resolve rhs '{}'", comparison.rhs))?;
-
-    Ok(lhs.compare(&rhs, comparison.operator))
+    Ok(lhs.compare(rhs, comparison.operator))
 }
 
 #[async_recursion(?Send)]
@@ -42,12 +30,7 @@ pub async fn solve_tree(sequence: &Sequence, resolver: &impl AsyncResolver) -> R
 
     for entry in sequence {
         let (child_result, logic) = match entry {
-            Entity::Comparison(ComparisonType::Value(cmp), logic) => {
-                (solve_one_const(&cmp, resolver).await?, logic)
-            }
-            Entity::Comparison(ComparisonType::Variable(cmp), logic) => {
-                (solve_one_var(&cmp, resolver).await?, logic)
-            }
+            Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver).await?, logic),
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver).await?, logic),
         };
 

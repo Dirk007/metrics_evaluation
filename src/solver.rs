@@ -1,29 +1,24 @@
 use anyhow::{anyhow, Result};
 
 use crate::{
-    compare::{Compareable, ComparisonType, Logic, ValueComparison, VariableComparison},
+    compare::{Compareable, Comparison, ComparisonType, Logic},
     resolver::Resolver,
     sequence::{Entity, Sequence},
 };
 
-pub fn solve_one_const(comparison: &ValueComparison, resolver: &impl Resolver) -> Result<bool> {
-    let value = resolver
+pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
+    let lhs = resolver
         .resolve(&comparison.name)
         .ok_or_else(|| anyhow!("Unable to resolve '{}'", comparison.name))?;
 
-    Ok(value.compare(&comparison.value, comparison.operator))
-}
+    let rhs = match comparison.comparison_type {
+        ComparisonType::Value(ref value) => Ok(value),
+        ComparisonType::Variable(ref rhs) => resolver
+            .resolve(rhs)
+            .ok_or_else(|| anyhow!("Unable to resolve variable '{}'", rhs)),
+    }?;
 
-pub fn solve_one_var(comparison: &VariableComparison, resolver: &impl Resolver) -> Result<bool> {
-    let lhs = resolver
-        .resolve(&comparison.lhs)
-        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.lhs))?;
-
-    let rhs = resolver
-        .resolve(&comparison.rhs)
-        .ok_or_else(|| anyhow!("Unable to resolve rhs '{}'", comparison.rhs))?;
-
-    Ok(lhs.compare(&rhs, comparison.operator))
+    Ok(lhs.compare(rhs, comparison.operator))
 }
 
 /// Solve a [Sequence] using the given 'resolver' to a final [bool].
@@ -33,12 +28,7 @@ pub fn solve_tree(sequence: &Sequence, resolver: &impl Resolver) -> Result<bool>
 
     for entry in sequence {
         let (child_result, logic) = match entry {
-            Entity::Comparison(ComparisonType::Value(cmp), logic) => {
-                (solve_one_const(&cmp, resolver)?, logic)
-            }
-            Entity::Comparison(ComparisonType::Variable(cmp), logic) => {
-                (solve_one_var(&cmp, resolver)?, logic)
-            }
+            Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver)?, logic),
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver)?, logic),
         };
 

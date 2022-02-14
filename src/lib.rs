@@ -27,7 +27,7 @@ pub mod solver;
 /// A generic value
 pub mod value;
 
-pub use calculate::{Arithmetic, Calculateable};
+pub use calculate::{Arithmetic, Calculateable, Calculation};
 pub use mapresolver::MapResolver;
 pub use parser::parse_tree;
 pub use resolver::Resolver;

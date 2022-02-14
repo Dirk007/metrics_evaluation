@@ -28,77 +28,39 @@ pub trait Compareable {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ComparisonType {
     /// A comparison of a variable against a fixed value
-    Value(ValueComparison),
+    Value(Value),
     /// A comparison of a variable against an other variable
-    Variable(VariableComparison),
+    Variable(String),
 }
 
-/// A simple comparison of a variable `name` against a `value`
 #[derive(Debug, Clone, PartialEq)]
-pub struct ValueComparison {
+pub struct Comparison {
     /// Name of the variable
     pub name: String,
     /// [Operator] to use for the comparison
     pub operator: Operator,
-    /// [Value] to compare the content of `name` to
-    pub value: Value,
-}
-
-/// A simple comparison of a variable `lhs` against the content of another variable `rhs`
-#[derive(Debug, Clone, PartialEq)]
-pub struct VariableComparison {
-    /// Name of the variable
-    pub lhs: String,
-    /// [Operator] to use for the comparison
-    pub operator: Operator,
-    /// Name of the other variable
-    pub rhs: String,
+    /// Thing to compare the content of `name` to
+    pub comparison_type: ComparisonType,
 }
 
 /// Triplet to [ValueComparison] conversion
-impl From<(&str, Operator, Value)> for ValueComparison {
-    fn from((name, op, value): (&str, Operator, Value)) -> Self {
-        Self::new(name, op, value)
-    }
-}
-
-impl ValueComparison {
-    pub fn new(name: impl AsRef<str>, operator: Operator, value: Value) -> Self {
+impl From<(&str, Operator, Value)> for Comparison {
+    fn from((name, operator, value): (&str, Operator, Value)) -> Self {
         Self {
-            name: name.as_ref().into(),
+            name: name.into(),
             operator,
-            value,
+            comparison_type: ComparisonType::Value(value),
         }
     }
 }
 
 /// Triplet to [VariableComparison] conversion
-impl From<(&str, Operator, &str)> for VariableComparison {
-    fn from((lhs, op, rhs): (&str, Operator, &str)) -> Self {
-        Self::new(lhs, op, rhs)
-    }
-}
-
-impl VariableComparison {
-    pub fn new(name: impl AsRef<str>, operator: Operator, rhs_name: impl AsRef<str>) -> Self {
+impl From<(&str, Operator, &str)> for Comparison {
+    fn from((name, operator, rhs): (&str, Operator, &str)) -> Self {
         Self {
-            lhs: name.as_ref().into(),
+            name: name.into(),
             operator,
-            rhs: rhs_name.as_ref().into(),
+            comparison_type: ComparisonType::Variable(rhs.into()),
         }
-    }
-}
-
-/// Converts a triplet of [str], [Operator], [str] to a ComparisonType of [ComparisonType::Variable]
-impl From<(&str, Operator, &str)> for ComparisonType {
-    fn from((lhs, op, rhs): (&str, Operator, &str)) -> Self {
-        Self::Variable((lhs, op, rhs).into())
-    }
-}
-
-/// Converts a triplet of [str], [Operator], [Value] to a ComparisonType of [ComparisonType::Value]
-impl From<(&str, Operator, Value)> for ComparisonType {
-    fn from((name, op, value): (&str, Operator, Value)) -> Self {
-        Self::Value((name, op, value).into())
     }
 }
