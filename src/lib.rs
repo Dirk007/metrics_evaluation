@@ -11,6 +11,7 @@
 
 use anyhow::Result;
 
+pub mod calculate;
 /// Compare [Value] against [Value]
 pub mod compare;
 /// Helper-Object to use [std::collections::HashMap] as [Resolver]
@@ -26,6 +27,7 @@ pub mod solver;
 /// A generic value
 pub mod value;
 
+pub use calculate::{Arithmetic, Calculateable};
 pub use mapresolver::MapResolver;
 pub use parser::parse_tree;
 pub use resolver::Resolver;
