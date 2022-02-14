@@ -1,27 +1,50 @@
 use anyhow::{anyhow, Result};
 
 use crate::{
-    compare::{Compareable, ComparisonType, Logic, ValueComparison, VariableComparison},
+    compare::{Compareable, Comparison, ComparisonType, Logic},
     resolver::Resolver,
     sequence::{Entity, Sequence},
+    value::Value,
+    Calculateable, Calculation,
 };
 
-pub fn solve_one_const(comparison: &ValueComparison, resolver: &impl Resolver) -> Result<bool> {
-    let value = resolver
-        .resolve(&comparison.name)
-        .ok_or_else(|| anyhow!("Unable to resolve '{}'", comparison.name))?;
+fn produce_final_value(
+    value: Value,
+    calculations: &Vec<Calculation>,
+    resolver: &impl Resolver,
+) -> Result<Value> {
+    let mut init = value;
+    for ref item in calculations {
+        let (v, a) = match item {
+            Calculation::Value(v, op) => (Some(v), op),
+            Calculation::Variable(name, op) => (resolver.resolve(name), op),
+        };
 
-    Ok(value.compare(&comparison.value, comparison.operator))
+        let v = v.ok_or_else(|| anyhow!("Unable to resolve variables"))?;
+
+        init = init.calculate(v, *a)?;
+    }
+
+    Ok(init)
 }
 
-pub fn solve_one_var(comparison: &VariableComparison, resolver: &impl Resolver) -> Result<bool> {
-    let lhs = resolver
-        .resolve(&comparison.lhs)
-        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.lhs))?;
+fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<Value> {
+    let (value, calc) = match comparison {
+        ComparisonType::Value(ref value, ref calculations) => (Some(value), calculations),
+        ComparisonType::Variable(ref lhs, ref calculations) => {
+            (resolver.resolve(lhs), calculations)
+        }
+    };
 
-    let rhs = resolver
-        .resolve(&comparison.rhs)
-        .ok_or_else(|| anyhow!("Unable to resolve rhs '{}'", comparison.rhs))?;
+    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs"))?;
+    Ok(produce_final_value(value.clone(), calc, resolver)?)
+}
+
+pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
+    // FIXME: REMOVE
+    println!("{:?}", comparison);
+    let lhs = resolve_var(&comparison.lhs, resolver)?;
+    let rhs = resolve_var(&comparison.rhs, resolver)?;
 
     Ok(lhs.compare(&rhs, comparison.operator))
 }
@@ -33,12 +56,7 @@ pub fn solve_tree(sequence: &Sequence, resolver: &impl Resolver) -> Result<bool>
 
     for entry in sequence {
         let (child_result, logic) = match entry {
-            Entity::Comparison(ComparisonType::Value(cmp), logic) => {
-                (solve_one_const(&cmp, resolver)?, logic)
-            }
-            Entity::Comparison(ComparisonType::Variable(cmp), logic) => {
-                (solve_one_var(&cmp, resolver)?, logic)
-            }
+            Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver)?, logic),
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver)?, logic),
         };
 
@@ -70,7 +88,10 @@ mod tests {
         values.insert("bar_baz", 4);
         let values = MapResolver::from(values);
 
+        assert_eq!(evaluate(r#"a == b - 1"#, &values)?, true);
+        assert_eq!(evaluate(r#"b == a + a"#, &values)?, true);
         assert_eq!(evaluate(r#"a < b"#, &values)?, true);
+        assert_eq!(evaluate(r#"a + 2 == b + 1"#, &values)?, true);
         assert_eq!(evaluate(r#"a >= b"#, &values)?, false);
         assert_eq!(evaluate(r#"b == a"#, &values)?, false);
         assert_eq!(evaluate(r#"b > a"#, &values)?, true);

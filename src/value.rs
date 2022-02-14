@@ -1,8 +1,15 @@
-use std::time::Duration;
+use std::{
+    ops::{Add, Div, Mul, Sub},
+    time::Duration,
+};
 
+use anyhow::{bail, Result};
 use chrono::naive::NaiveTime;
 
-use crate::compare::{Compareable, Operator};
+use crate::{
+    calculate::{Arithmetic, Calculateable},
+    compare::{Compareable, Operator},
+};
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum Value {
@@ -22,6 +29,98 @@ impl Compareable for Value {
             Operator::Less => self < rhs,
             Operator::GreaterEqual => self >= rhs,
             Operator::LessEqual => self <= rhs,
+        }
+    }
+}
+
+/// ```
+/// use metrics_evaluation::*;
+///
+/// let foo = Value::Numeric(1.0);
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Add).unwrap();
+/// assert_eq!(bar, Value::Numeric(3.0));
+///
+/// let foo = Value::Numeric(4.0);
+/// let bar = foo.calculate(&Value::Numeric(3.0), Arithmetic::Sub).unwrap();
+/// assert_eq!(bar, Value::Numeric(1.0));
+///
+/// let foo = Value::Numeric(4.0);
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Mul).unwrap();
+/// assert_eq!(bar, Value::Numeric(8.0));
+///
+/// let foo = Value::Numeric(4.0);
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Div).unwrap();
+/// assert_eq!(bar, Value::Numeric(2.0));
+/// ```
+impl Calculateable for Value {
+    fn calculate(self, rhs: &Self, operator: Arithmetic) -> Result<Self> {
+        match operator {
+            Arithmetic::Add => self + rhs,
+            Arithmetic::Sub => self - rhs,
+            Arithmetic::Mul => self * rhs,
+            Arithmetic::Div => self / rhs,
+        }
+    }
+}
+
+impl Add<&Self> for Value {
+    type Output = Result<Value>;
+
+    fn add(self, rhs: &Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::String(lhs), Value::String(rhs)) => Ok(Value::String(lhs + &rhs)),
+            (Value::String(lhs), Value::Numeric(rhs)) => {
+                Ok(Value::String(format!("{} {}", lhs, rhs)))
+            }
+            (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs + rhs)),
+            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs + *rhs)),
+            (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
+                lhs + chrono::Duration::from_std(rhs.clone()).expect("Unable to convert duration"),
+            )),
+            _ => bail!("Incompatible types for addition"),
+        }
+    }
+}
+
+impl Sub<&Self> for Value {
+    type Output = Result<Value>;
+
+    fn sub(self, rhs: &Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs - rhs)),
+            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs - *rhs)),
+            (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
+                lhs - chrono::Duration::from_std(rhs.clone()).expect("Unable to convert duration"),
+            )),
+            _ => bail!("Incompatible types for substraction"),
+        }
+    }
+}
+
+impl Mul<&Self> for Value {
+    type Output = Result<Value>;
+
+    fn mul(self, rhs: &Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs * rhs)),
+            (Value::Duration(lhs), Value::Numeric(rhs)) => {
+                Ok(Value::Duration(lhs * rhs.round() as u32))
+            }
+            _ => bail!("Incompatible types for multiiplication"),
+        }
+    }
+}
+
+impl Div<&Self> for Value {
+    type Output = Result<Value>;
+
+    fn div(self, rhs: &Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs / rhs)),
+            (Value::Duration(lhs), Value::Numeric(rhs)) => {
+                Ok(Value::Duration(lhs / rhs.round() as u32))
+            }
+            _ => bail!("Incompatible types for division"),
         }
     }
 }
