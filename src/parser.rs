@@ -114,8 +114,6 @@ fn match_calc_op(input: &str) -> IResult<&str, Arithmetic> {
 }
 
 fn match_value_comparison(input: &str) -> IResult<&str, Comparison> {
-    println!("***** try CONST");
-
     let (rest, (identifier, op, value)) =
         tuple((match_identifier, match_compare_op, match_value_type))(input)?;
 
@@ -123,21 +121,16 @@ fn match_value_comparison(input: &str) -> IResult<&str, Comparison> {
         .try_into()
         .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?;
 
-    println!("***** CONST");
-
     Ok((rest, comparison))
 }
 
 fn match_variable_comparison(input: &str) -> IResult<&str, Comparison> {
-    println!("***** try VAR");
     let (rest, (lhs, op, rhs)) =
         tuple((match_identifier, match_compare_op, match_identifier))(input)?;
 
     let comparison: Comparison = (lhs, op, rhs)
         .try_into()
         .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?;
-
-    println!("***** VAR");
 
     Ok((rest, comparison))
 }
