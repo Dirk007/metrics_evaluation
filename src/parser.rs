@@ -20,6 +20,7 @@ use crate::{
     compare::{Comparison, Logic, Operator},
     sequence::{Entity, Sequence},
     value::Value,
+    Calculation,
 };
 
 const TRUE: &str = "true";
@@ -32,6 +33,17 @@ fn match_optional_logic(input: &str) -> IResult<&str, Vec<&str>> {
         trim(tag("and")),
         trim(tag("||")),
         trim(tag("&&")),
+    )))(input)?;
+    Ok((rest, m))
+}
+
+fn match_optional_calculation(input: &str) -> IResult<&str, Vec<&str>> {
+    // TODO: isnt there something like `one0`?
+    let (rest, m) = many0(alt((
+        trim(tag("+")),
+        trim(tag("-")),
+        trim(tag("*")),
+        trim(tag("/")),
     )))(input)?;
     Ok((rest, m))
 }
@@ -135,10 +147,39 @@ fn match_variable_comparison(input: &str) -> IResult<&str, Comparison> {
     Ok((rest, comparison))
 }
 
+fn match_value_calculation(input: &str) -> IResult<&str, Calculation> {
+    let (rest, (arithmetic, value)) = tuple((match_calc_op, match_value_type))(input)?;
+
+    let calculation = Calculation::Value(value, arithmetic);
+
+    Ok((rest, calculation))
+}
+
+fn match_variable_calculation(input: &str) -> IResult<&str, Calculation> {
+    let (rest, (arithmetic, name)) = tuple((match_calc_op, match_identifier))(input)?;
+
+    let calculation = Calculation::Variable(name.into(), arithmetic);
+
+    Ok((rest, calculation))
+}
+
 fn match_comparison(input: &str) -> IResult<&str, Comparison> {
     // This fails: alt((match_value_comparison, match_variable_comparison))(input)
-    let (rest, comparison) =
+    let (mut rest, mut comparison) =
         match_value_comparison(input).or_else(|_| match_variable_comparison(input))?;
+
+    // Try to acquire any appended arithmetic to the comparison (e.G. a == foo + 2)
+    while !rest.is_empty() {
+        let (_, arithmetic) = match_optional_calculation(rest)?;
+        if arithmetic.is_empty() {
+            break;
+        }
+        let (new_rest, calculation) =
+            match_value_calculation(rest).or_else(|_| match_variable_calculation(rest))?;
+
+        comparison.calculations.push(calculation);
+        rest = new_rest;
+    }
 
     Ok((rest, comparison))
 }
@@ -205,12 +246,21 @@ fn decode_logic(logics: Vec<&str>) -> Option<Logic> {
 /// ```
 /// use metrics_evaluation::parser::match_comparisons;
 /// use metrics_evaluation::compare::{Operator, Logic, Comparison};
+/// use metrics_evaluation::calculate::{Calculation, Arithmetic};
 /// use metrics_evaluation::value::Value;
+///
+/// let (rest, (cmp, logic)) = match_comparisons("hello > 1 + 2 - foo").unwrap();
+/// let expected = Comparison::from(("hello", Operator::Greater, Value::from(1)))
+///     .with_calculation(Calculation::Value(2.into(), Arithmetic::Add))
+///     .with_calculation(Calculation::Variable("foo".into(), Arithmetic::Sub));
+/// assert_eq!(cmp, expected);
+/// assert_eq!(logic, None);
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 and foo < 2").unwrap();
 /// assert_eq!(cmp, Comparison::from(("hello", Operator::Greater, Value::from(1))));
 /// assert_eq!(rest, " and foo < 2");
 /// assert_eq!(logic, None);
+/// assert!(cmp.calculations.is_empty());
 ///
 /// let (rest, (cmp, logic)) = match_comparisons(rest).unwrap();
 /// assert_eq!(cmp, Comparison::from(("foo", Operator::Less, Value::from(2))));

@@ -37,23 +37,23 @@ impl Compareable for Value {
 /// use metrics_evaluation::*;
 ///
 /// let foo = Value::Numeric(1.0);
-/// let bar = foo.calculate(Value::Numeric(2.0), Arithmetic::Add).unwrap();
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Add).unwrap();
 /// assert_eq!(bar, Value::Numeric(3.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(Value::Numeric(3.0), Arithmetic::Sub).unwrap();
+/// let bar = foo.calculate(&Value::Numeric(3.0), Arithmetic::Sub).unwrap();
 /// assert_eq!(bar, Value::Numeric(1.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(Value::Numeric(2.0), Arithmetic::Mul).unwrap();
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Mul).unwrap();
 /// assert_eq!(bar, Value::Numeric(8.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(Value::Numeric(2.0), Arithmetic::Div).unwrap();
+/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Div).unwrap();
 /// assert_eq!(bar, Value::Numeric(2.0));
 /// ```
 impl Calculateable for Value {
-    fn calculate(self, rhs: Self, operator: Arithmetic) -> Result<Self> {
+    fn calculate(self, rhs: &Self, operator: Arithmetic) -> Result<Self> {
         match operator {
             Arithmetic::Add => self + rhs,
             Arithmetic::Sub => self - rhs,
@@ -63,44 +63,44 @@ impl Calculateable for Value {
     }
 }
 
-impl Add for Value {
+impl Add<&Self> for Value {
     type Output = Result<Value>;
 
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: &Self) -> Self::Output {
         match (self, rhs) {
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::String(lhs + &rhs)),
             (Value::String(lhs), Value::Numeric(rhs)) => {
                 Ok(Value::String(format!("{} {}", lhs, rhs)))
             }
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs + rhs)),
-            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs + rhs)),
+            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs + *rhs)),
             (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
-                lhs + chrono::Duration::from_std(rhs).expect("Unable to convert duration"),
+                lhs + chrono::Duration::from_std(rhs.clone()).expect("Unable to convert duration"),
             )),
             _ => bail!("Incompatible types for addition"),
         }
     }
 }
 
-impl Sub for Value {
+impl Sub<&Self> for Value {
     type Output = Result<Value>;
 
-    fn sub(self, rhs: Self) -> Self::Output {
+    fn sub(self, rhs: &Self) -> Self::Output {
         match (self, rhs) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs - rhs)),
-            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs - rhs)),
+            (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs - *rhs)),
             (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
-                lhs - chrono::Duration::from_std(rhs).expect("Unable to convert duration"),
+                lhs - chrono::Duration::from_std(rhs.clone()).expect("Unable to convert duration"),
             )),
             _ => bail!("Incompatible types for substraction"),
         }
     }
 }
 
-impl Mul for Value {
+impl Mul<&Self> for Value {
     type Output = Result<Value>;
 
-    fn mul(self, rhs: Self) -> Self::Output {
+    fn mul(self, rhs: &Self) -> Self::Output {
         match (self, rhs) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs * rhs)),
             (Value::Duration(lhs), Value::Numeric(rhs)) => {
@@ -111,10 +111,10 @@ impl Mul for Value {
     }
 }
 
-impl Div for Value {
+impl Div<&Self> for Value {
     type Output = Result<Value>;
 
-    fn div(self, rhs: Self) -> Self::Output {
+    fn div(self, rhs: &Self) -> Self::Output {
         match (self, rhs) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs / rhs)),
             (Value::Duration(lhs), Value::Numeric(rhs)) => {

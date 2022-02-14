@@ -1,4 +1,5 @@
 use crate::value::Value;
+use crate::Calculation;
 
 /// Logic for comparisons
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,7 +34,7 @@ pub enum ComparisonType {
     Variable(String),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Comparison {
     /// Name of the variable
     pub name: String,
@@ -41,6 +42,15 @@ pub struct Comparison {
     pub operator: Operator,
     /// Thing to compare the content of `name` to
     pub comparison_type: ComparisonType,
+    /// Optional arithmetics on rhs
+    pub calculations: Vec<Calculation>,
+}
+
+impl Comparison {
+    pub fn with_calculation(mut self, calc: Calculation) -> Self {
+        self.calculations.push(calc);
+        self
+    }
 }
 
 /// Triplet to [ValueComparison] conversion
@@ -50,6 +60,7 @@ impl From<(&str, Operator, Value)> for Comparison {
             name: name.into(),
             operator,
             comparison_type: ComparisonType::Value(value),
+            calculations: Vec::new(),
         }
     }
 }
@@ -61,6 +72,7 @@ impl From<(&str, Operator, &str)> for Comparison {
             name: name.into(),
             operator,
             comparison_type: ComparisonType::Variable(rhs.into()),
+            calculations: Vec::new(),
         }
     }
 }

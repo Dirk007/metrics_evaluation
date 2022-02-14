@@ -4,21 +4,45 @@ use crate::{
     compare::{Compareable, Comparison, ComparisonType, Logic},
     resolver::Resolver,
     sequence::{Entity, Sequence},
+    value::Value,
+    Calculateable, Calculation,
 };
+
+fn produce_final_rhs(
+    value: Value,
+    calculations: &Vec<Calculation>,
+    resolver: &impl Resolver,
+) -> Result<Value> {
+    let mut init = value;
+    for ref item in calculations {
+        let (v, a) = match item {
+            Calculation::Value(v, op) => (Some(v), op),
+            Calculation::Variable(name, op) => (resolver.resolve(name), op),
+        };
+
+        let v = v.ok_or_else(|| anyhow!("Unable to resolve variables"))?;
+
+        init = init.calculate(v, *a)?;
+    }
+
+    Ok(init)
+}
 
 pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
     let lhs = resolver
         .resolve(&comparison.name)
-        .ok_or_else(|| anyhow!("Unable to resolve '{}'", comparison.name))?;
+        .ok_or_else(|| anyhow!("Unable to resolve lhs '{}'", comparison.name))?;
 
     let rhs = match comparison.comparison_type {
         ComparisonType::Value(ref value) => Ok(value),
         ComparisonType::Variable(ref rhs) => resolver
             .resolve(rhs)
-            .ok_or_else(|| anyhow!("Unable to resolve variable '{}'", rhs)),
+            .ok_or_else(|| anyhow!("Unable to resolve rhs variable '{}'", rhs)),
     }?;
 
-    Ok(lhs.compare(rhs, comparison.operator))
+    let rhs = produce_final_rhs(rhs.clone(), &comparison.calculations, resolver)?;
+
+    Ok(lhs.compare(&rhs, comparison.operator))
 }
 
 /// Solve a [Sequence] using the given 'resolver' to a final [bool].
@@ -60,6 +84,8 @@ mod tests {
         values.insert("bar_baz", 4);
         let values = MapResolver::from(values);
 
+        assert_eq!(evaluate(r#"a == b - 1"#, &values)?, true);
+        assert_eq!(evaluate(r#"b == a + a"#, &values)?, true);
         assert_eq!(evaluate(r#"a < b"#, &values)?, true);
         assert_eq!(evaluate(r#"a >= b"#, &values)?, false);
         assert_eq!(evaluate(r#"b == a"#, &values)?, false);
