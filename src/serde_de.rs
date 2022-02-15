@@ -1,3 +1,5 @@
+//! Adds [serde::Deserialze] support for [Sequence]
+
 use std::fmt;
 
 use serde::de::{self, Deserialize, Deserializer, Visitor};
