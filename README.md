@@ -93,6 +93,6 @@ fn main() -> Result<()> {
 ## License
 `metrics_evaluation` is distributed under the terms the MIT license.
 
-See [LICENSE](https://github.com/likebike/fasteval/blob/master/LICENSE) for details.
+See [LICENSE](https://github.com/Dirk007/metrics_evaluation/blob/master/LICENSE) for details.
 
 

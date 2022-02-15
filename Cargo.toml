@@ -6,7 +6,7 @@ description = "Small foot-print parser and solver for (nested) text-based compar
 authors = ["Dirk Faust <dirk@faustbande.de>"]
 license = "MIT"
 repository = "https://github.com/Dirk007/metrics_evaluation"
-keywords = ["comparison", "pasrer", "metrics", "evaluation"]
+keywords = ["comparison", "parser", "metrics", "evaluation"]
 
 [lib]
 name = "metrics_evaluation"
