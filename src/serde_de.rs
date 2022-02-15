@@ -21,6 +21,13 @@ impl<'de> Visitor<'de> for SequenceVisitor {
     {
         parse_tree(value).map_err(|e| E::custom(format!("Unable to parse '{}': {:?}", value, e)))
     }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        parse_tree(&value).map_err(|e| E::custom(format!("Unable to parse '{}': {:?}", value, e)))
+    }
 }
 
 impl<'de> Deserialize<'de> for Sequence {
@@ -28,7 +35,7 @@ impl<'de> Deserialize<'de> for Sequence {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_i32(SequenceVisitor)
+        deserializer.deserialize_string(SequenceVisitor)
     }
 }
 
