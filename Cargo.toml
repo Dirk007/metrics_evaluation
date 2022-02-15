@@ -2,6 +2,7 @@
 name = "metrics_evaluation"
 version = "0.1.2"
 edition = "2021"
+description = "Small foot-print parser and solver for (nested) text-based comparisons"
 authors = ["Dirk Faust <dirk@faustbande.de>"]
 license = "MIT"
 repository = "https://github.com/Dirk007/metrics_evaluation"
