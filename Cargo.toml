@@ -1,6 +1,6 @@
 [package]
 name = "metrics_evaluation"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "Small foot-print parser and solver for (nested) text-based comparisons"
 authors = ["Dirk Faust <dirk@faustbande.de>"]
