@@ -206,6 +206,8 @@ fn match_comparison(input: &str) -> IResult<&str, Comparison> {
     Ok((rest, comparison))
 }
 
+/// Matches one underlying block with optional logic.
+///
 /// ```
 /// use metrics_evaluation::{
 ///     compare::{Logic, Operator},
@@ -264,31 +266,46 @@ fn decode_logic(logics: Vec<&str>) -> Option<Logic> {
         .flatten()
 }
 
-/// Matches one comparison with optional logic
+/// Matches one comparison with optional logic.
 /// ```
-/// use metrics_evaluation::parser::match_comparisons;
-/// use metrics_evaluation::compare::{Operator, Logic, Comparison};
-/// use metrics_evaluation::calculate::{Calculation, Arithmetic};
-/// use metrics_evaluation::value::Value;
+/// use metrics_evaluation::{
+///     calculate::{Arithmetic, Calculation},
+///     compare::{Comparison, Logic, Operator},
+///     parser::match_comparisons,
+///     value::Value,
+/// };
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 + 2 - foo").unwrap();
 /// let mut expected = Comparison::from(("hello", Operator::Greater, Value::from(1)));
-/// expected.rhs.with_calculation(Calculation::Value(2.into(), Arithmetic::Add));
-/// expected.rhs.with_calculation(Calculation::Variable("foo".into(), Arithmetic::Sub));
+/// expected
+///     .rhs
+///     .with_calculation(Calculation::Value(2.into(), Arithmetic::Add));
+/// expected
+///     .rhs
+///     .with_calculation(Calculation::Variable("foo".into(), Arithmetic::Sub));
 /// assert_eq!(cmp, expected);
 /// assert_eq!(logic, None);
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 and foo < 2").unwrap();
-/// assert_eq!(cmp, Comparison::from(("hello", Operator::Greater, Value::from(1))));
+/// assert_eq!(
+///     cmp,
+///     Comparison::from(("hello", Operator::Greater, Value::from(1)))
+/// );
 /// assert_eq!(rest, " and foo < 2");
 /// assert_eq!(logic, None);
 ///
 /// let (rest, (cmp, logic)) = match_comparisons(rest).unwrap();
-/// assert_eq!(cmp, Comparison::from(("foo", Operator::Less, Value::from(2))));
+/// assert_eq!(
+///     cmp,
+///     Comparison::from(("foo", Operator::Less, Value::from(2)))
+/// );
 /// assert_eq!(logic, Some(Logic::And));
 ///
 /// let (rest, (cmp, logic)) = match_comparisons(r#"foo == "bar""#).unwrap();
-/// assert_eq!(cmp, Comparison::from(("foo", Operator::Equal, Value::from("bar"))));
+/// assert_eq!(
+///     cmp,
+///     Comparison::from(("foo", Operator::Equal, Value::from("bar")))
+/// );
 /// assert_eq!(logic, None);
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > foo or bar == foo").unwrap();

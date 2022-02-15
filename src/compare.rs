@@ -1,5 +1,4 @@
-use crate::value::Value;
-use crate::Calculation;
+use crate::{value::Value, Calculation};
 
 /// Logic for comparisons
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -28,9 +27,9 @@ pub trait Compareable {
 /// Defines if a comparison is against a value or against another variable
 #[derive(Debug, PartialEq)]
 pub enum ComparisonType {
-    /// A comparison of a variable against a fixed value
+    /// A comparison of a variable against a fixed value (wich optional calculations)
     Value(Value, Vec<Calculation>),
-    /// A comparison of a variable against an other variable
+    /// A comparison of a variable against an other variable (wich optional calculations)
     Variable(String, Vec<Calculation>),
 }
 
@@ -45,15 +44,15 @@ impl ComparisonType {
 
 #[derive(Debug, PartialEq)]
 pub struct Comparison {
-    /// Name of the variable
+    /// Left-Hand-Side of the comparison (which the rhs will be compared to)
     pub lhs: ComparisonType,
     /// [Operator] to use for the comparison
     pub operator: Operator,
-    /// Thing to compare the content of `name` to
+    /// Right-Hand-Side to compare the content of `lhs` to
     pub rhs: ComparisonType,
 }
 
-/// Triplet to [ValueComparison] conversion
+/// Triplet to [Comparison] conversion
 impl From<(&str, Operator, Value)> for Comparison {
     fn from((name, operator, value): (&str, Operator, Value)) -> Self {
         Self {
@@ -64,7 +63,7 @@ impl From<(&str, Operator, Value)> for Comparison {
     }
 }
 
-/// Triplet to [VariableComparison] conversion
+/// Triplet to [Comparison] conversion
 impl From<(&str, Operator, &str)> for Comparison {
     fn from((name, operator, rhs): (&str, Operator, &str)) -> Self {
         Self {
