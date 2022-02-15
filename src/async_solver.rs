@@ -52,7 +52,7 @@ pub async fn solve_one(comparison: &Comparison, resolver: &impl AsyncResolver) -
 pub async fn solve_tree(sequence: &Sequence, resolver: &impl AsyncResolver) -> Result<bool> {
     let mut result = true;
 
-    for entry in sequence {
+    for entry in &sequence.items {
         let (child_result, logic) = match entry {
             Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver).await?, logic),
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver).await?, logic),

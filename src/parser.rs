@@ -330,18 +330,18 @@ pub fn match_comparisons(input: &str) -> IResult<&str, (Comparison, Option<Logic
 /// Use [crate::evaluate] to have an already implemented combination.
 pub fn parse_tree(input: impl AsRef<str>) -> Result<Sequence> {
     let mut rest: &str = input.as_ref();
-    let mut results: Sequence = Sequence::new();
+    let mut results: Sequence = Sequence::default();
 
     while !rest.is_empty() {
         let (block, comparison) = (match_block(rest), match_comparisons(rest));
         match (block, comparison) {
             (Ok((new_rest, (block, logic))), Err(_)) => {
                 rest = new_rest;
-                results.push(Entity::Child(parse_tree(block)?, logic));
+                results.items.push(Entity::Child(parse_tree(block)?, logic));
             }
             (Err(_), Ok((new_rest, (comparison, logic)))) => {
                 rest = new_rest;
-                results.push(Entity::Comparison(comparison, logic));
+                results.items.push(Entity::Comparison(comparison, logic));
             }
             _ => {
                 return Err(anyhow!("Syntax error near '{rest}'"));

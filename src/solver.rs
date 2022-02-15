@@ -52,7 +52,7 @@ pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bo
 pub fn solve_tree(sequence: &Sequence, resolver: &impl Resolver) -> Result<bool> {
     let mut result = true;
 
-    for entry in sequence {
+    for entry in &sequence.items {
         let (child_result, logic) = match entry {
             Entity::Comparison(cmp, logic) => (solve_one(&cmp, resolver)?, logic),
             Entity::Child(seq, logic) => (solve_tree(&seq, resolver)?, logic),
