@@ -13,19 +13,19 @@ fn produce_final_value(
     calculations: &Vec<Calculation>,
     resolver: &impl Resolver,
 ) -> Result<Value> {
-    let mut init = value;
+    let mut current = value;
     for ref item in calculations {
         let (v, a) = match item {
             Calculation::Value(v, op) => (Some(v), op),
             Calculation::Variable(name, op) => (resolver.resolve(name), op),
         };
 
-        let v = v.ok_or_else(|| anyhow!("Unable to resolve variables"))?;
+        let v = v.ok_or_else(|| anyhow!("Unable to resolve variable {:?}", item))?;
 
-        init = init.calculate(v, *a)?;
+        current = current.calculate(v, *a)?;
     }
 
-    Ok(init)
+    Ok(current)
 }
 
 fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<Value> {
@@ -36,13 +36,11 @@ fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<
         }
     };
 
-    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs"))?;
+    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs in {:?}", comparison))?;
     Ok(produce_final_value(value.clone(), calc, resolver)?)
 }
 
 pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
-    // FIXME: REMOVE
-    println!("{:?}", comparison);
     let lhs = resolve_var(&comparison.lhs, resolver)?;
     let rhs = resolve_var(&comparison.rhs, resolver)?;
 

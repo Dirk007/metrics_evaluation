@@ -11,12 +11,19 @@ use crate::{
     compare::{Compareable, Operator},
 };
 
+/// Representation of different value types for use in comparisons.
+/// Is [Compareable] and [Calculateable].
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum Value {
+    /// A string-value which represents any kind of text sequence
     String(String),
+    /// A numeric value which has u8 to f64 conversions implemented
     Numeric(f64),
+    /// A simple [bool] wrapper
     Bool(bool),
+    /// A time-representation
     Time(NaiveTime),
+    /// A duration in time
     Duration(Duration),
 }
 
@@ -37,19 +44,27 @@ impl Compareable for Value {
 /// use metrics_evaluation::*;
 ///
 /// let foo = Value::Numeric(1.0);
-/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Add).unwrap();
+/// let bar = foo
+///     .calculate(&Value::Numeric(2.0), Arithmetic::Add)
+///     .unwrap();
 /// assert_eq!(bar, Value::Numeric(3.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(&Value::Numeric(3.0), Arithmetic::Sub).unwrap();
+/// let bar = foo
+///     .calculate(&Value::Numeric(3.0), Arithmetic::Sub)
+///     .unwrap();
 /// assert_eq!(bar, Value::Numeric(1.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Mul).unwrap();
+/// let bar = foo
+///     .calculate(&Value::Numeric(2.0), Arithmetic::Mul)
+///     .unwrap();
 /// assert_eq!(bar, Value::Numeric(8.0));
 ///
 /// let foo = Value::Numeric(4.0);
-/// let bar = foo.calculate(&Value::Numeric(2.0), Arithmetic::Div).unwrap();
+/// let bar = foo
+///     .calculate(&Value::Numeric(2.0), Arithmetic::Div)
+///     .unwrap();
 /// assert_eq!(bar, Value::Numeric(2.0));
 /// ```
 impl Calculateable for Value {

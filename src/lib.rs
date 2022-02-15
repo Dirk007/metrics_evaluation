@@ -1,16 +1,33 @@
-//! This crate provides a small-foorprint solution to evaluate comparison-texts against given metric-values - for example to evaluate
-//! IoT-Triggers against a collection of comparisons ([Sequence] here).
+//! This crate provides a small-foorprint solution to evaluate comparisons, expressed as text, with a dynamically value-lookup.
 //!
-//! The comparisons can be written like normal rust-code ("foo > 2 && bar != 42 || (baz == 47111 && barg <= 99) && foo >= bar").
-//! Comparisons can be made against [Value::String], [Value::Numeric] (internally [f64]), [Value::Time] (internally [chrono::NaiveTime]) and [Value::Duration] as [chrono::Duration]
-//! (represented in [humantime]) and other variable-names.
+//! The comparisons can be written like normal rust-code.
+//! For example:
 //!
-//! Value-Lookup is made through a given [Resolver]-trait internally so you are open to use what ever you like in the background.
+//! ```foo + 2 > 2 && bar != 42 || (baz == 47111 && barg * 42 <= 99) && foo >= bar - 5```.
+//! 
+//! The only limitation at the moment is that you currently have to use a variable-name on the left-hand (WIP). Left-Hand values are not supported yet.
+//!
+//! Comparisons can be made against any [Value]-Type implemented:
+//! - [Value::String] encapsulated in quotation marks
+//! - [Value::Numeric] (internally [f64] but everything from u8 to f64 will be converted Into it automatically)
+//! - [Value::Bool] which is simply a [bool]
+//! - [Value::Time] (internally [chrono::NaiveTime]), encapsulated in quotation marks and expressed in form of "%H:%M:%S" as of NaiveTime::parse_from_str().
+//! - [Value::Duration] as [chrono::Duration] encapsulated in quotation marks and represented in [humantime::Duration] (see [humantime::parse_duration] for formatting possibilities) for ease of use
+//!
+//! Value-Lookup is made through a given [Resolver]-trait internally so you are open to use what ever you like in the background to resolve variable-names to their value-representation.
+//!
+//! If you want to use an async resolver (see AsyncResolver), you have to enable the `async` feature.
+//!
+//! For laziness there is a [MapResolver] which implements [Resolver] and can be made [From] any [std::collections::HashMap] that contain a Key which is [AsRef]\<str> and values which can be made [Value]::[From].
+//!
 //! For the ease of use, an `crate::evaluate` function is implemented which just takes a string and compares using a given resolver.
-//! To have a more performant usage of this crate, use [crate::parse_tree] once with a call to [crate::solve_tree] periodically or when needed.
+//!
+//! To have a more performant usage of this crate, use [crate::parse_tree] which produces a pre-parsed [Sequence] once.
+//! This [Sequence] can then be used in subsequent calls to [crate::solve_tree] to evalaute the [Sequence] with current variable-values over and over again.
 
 use anyhow::Result;
 
+/// Compute arithmetics on [Value]s
 pub mod calculate;
 /// Compare [Value] against [Value]
 pub mod compare;
