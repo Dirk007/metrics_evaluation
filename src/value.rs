@@ -13,7 +13,8 @@ use crate::{
 
 /// Representation of different value types for use in comparisons.
 /// Is [Compareable] and [Calculateable].
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
+#[cfg_attr(not(feature = "lax_comparison"), derive(PartialEq))]
+#[derive(Debug, PartialOrd, Clone)]
 pub enum Value {
     /// A string-value which represents any kind of text sequence
     String(String),
@@ -25,6 +26,57 @@ pub enum Value {
     Time(NaiveTime),
     /// A duration in time
     Duration(Duration),
+}
+
+#[cfg(feature = "lax_comparison")]
+/// Extra lax comparison tries to perform some conversions on compare and may succeed where std [PartialEq] fails
+/// ```
+/// use metrics_evaluation::*;
+///
+/// // Numeric vs Bool: anything != 0 is true
+/// assert_eq!(&Value::Numeric(1.0), &Value::Bool(true));
+/// assert_eq!(&Value::Numeric(2.0), &Value::Bool(true));
+/// assert_eq!(&Value::Numeric(0.0), &Value::Bool(false));
+/// assert_eq!(&Value::Bool(false), &Value::Numeric(0.0));
+///
+/// // Numeric vs. String
+/// assert_eq!(&Value::String("1".into()), &Value::Numeric(1.0));
+/// assert_eq!(&Value::Numeric(42.0), &Value::String("42".into()));
+/// assert_ne!(&Value::Numeric(123.0), &Value::String("foo".into()));
+///
+/// // Bool vs. String
+/// assert_eq!(&Value::String("true".into()), &Value::Bool(true));
+/// assert_eq!(&Value::Bool(true), &Value::String("true".into()));
+/// assert_eq!(&Value::String("false".into()), &Value::Bool(false));
+/// assert_ne!(&Value::String("false".into()), &Value::Bool(true));
+/// assert_ne!(&Value::String("foo".into()), &Value::Bool(true));
+/// assert_ne!(&Value::String("foo".into()), &Value::Bool(false));
+/// ```
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            // Same types - this equals the behavior of [PartialEq]
+            (Value::String(left), Value::String(right)) => left == right,
+            (Value::Numeric(left), Value::Numeric(right)) => left == right,
+            (Value::Bool(left), Value::Bool(right)) => left == right,
+            (Value::Time(left), Value::Time(right)) => left == right,
+            (Value::Duration(left), Value::Duration(right)) => left == right,
+            // Implicit conversion: bool vs. numeric where numeric != 0 == true
+            (Value::Bool(left), Value::Numeric(right)) => left == &(right != &0f64),
+            (Value::Numeric(left), Value::Bool(right)) => &(left != &0f64) == right,
+            // Implicit conversion: string vs. numeric where the string must be parseable as `f64`
+            (Value::String(left), Value::Numeric(right)) => {
+                str::parse::<f64>(left).ok().as_ref() == Some(right)
+            }
+            (Value::Numeric(left), Value::String(right)) => {
+                str::parse::<f64>(right).ok().as_ref() == Some(left)
+            }
+            // Implicit conversion: string vs. bool where a string is the `display` of the bool
+            (Value::String(left), Value::Bool(right)) => left == &format!("{}", right),
+            (Value::Bool(left), Value::String(right)) => &format!("{}", left) == right,
+            _ => false,
+        }
+    }
 }
 
 impl Compareable for Value {

@@ -43,14 +43,18 @@ impl<'de> Deserialize<'de> for Sequence {
 mod tests {
     use serde::Deserialize;
 
-    use crate::compare::{Comparison, Logic, Operator};
-    use crate::sequence::{Entity, Sequence};
-    use crate::value::Value;
+    use crate::{
+        compare::{Comparison, Logic, Operator},
+        sequence::{Entity, Sequence},
+        value::Value,
+    };
 
     #[test]
     fn test_deserialize() -> anyhow::Result<()> {
-        use serde::de::value::{Error as ValueError, StrDeserializer};
-        use serde::de::IntoDeserializer;
+        use serde::de::{
+            value::{Error as ValueError, StrDeserializer},
+            IntoDeserializer,
+        };
 
         let input = "a > 1 && b < 2";
 
