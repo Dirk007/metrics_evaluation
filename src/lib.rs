@@ -4,7 +4,7 @@
 //! For example:
 //!
 //! ```foo + 2 > 2 && bar != 42 || (baz == 47111 && barg * 42 <= 99) && foo >= bar - 5```.
-//!
+//! 
 //! The only limitation at the moment is that you currently have to use a variable-name on the left-hand (WIP). Left-Hand values are not supported yet.
 //!
 //! Comparisons can be made against any [Value]-Type implemented:

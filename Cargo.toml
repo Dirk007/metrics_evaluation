@@ -33,5 +33,9 @@ tokio-test = { version = "0.4.2" }
 
 [features]
 default = []
+# Enable async support
 async = ["tokio", "async-trait", "async-recursion"]
+# Enable serde deserialization of [Sequence]
 serde_de = ["serde"]
+# Enbale extra lax comparisons where some implicit conversions can take place
+lax_comparison = []
