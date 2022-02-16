@@ -10,7 +10,7 @@ use nom::{
     combinator::{recognize, value},
     error::ParseError,
     multi::{many0, many1},
-    sequence::{delimited, pair, tuple},
+    sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
 use parse_hyperlinks::take_until_unbalanced;
@@ -95,7 +95,7 @@ fn match_value_type(input: &str) -> IResult<&str, Value> {
     Ok((rest, value))
 }
 
-/// Remove whitespaces
+/// Remove whitespaces around
 fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
     inner: F,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
@@ -103,6 +103,16 @@ where
     F: Fn(&'a str) -> IResult<&'a str, O, E>,
 {
     delimited(multispace0, inner, multispace0)
+}
+
+/// Remove trailing whitespace
+fn trim_front<'a, F: 'a, O, E: ParseError<&'a str>>(
+    inner: F,
+) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+where
+    F: Fn(&'a str) -> IResult<&'a str, O, E>,
+{
+    preceded(multispace0, inner)
 }
 
 fn match_compare_op(input: &str) -> IResult<&str, Operator> {
@@ -192,7 +202,7 @@ fn match_calculations(input: &str) -> IResult<&str, Vec<Calculation>> {
             match_value_calculation(rest).or_else(|_| match_variable_calculation(rest))?;
 
         result.push(calculation);
-        rest = new_rest;
+        rest = new_rest.trim();
     }
 
     Ok((rest, result))
@@ -242,11 +252,23 @@ fn match_comparison(input: &str) -> IResult<&str, Comparison> {
 /// assert_eq!(block, "bar == 2 and foo == 3");
 /// assert_eq!(logic, None);
 /// assert_eq!(rest, " or (baz != 42)");
+///
+/// // Test if whitespace on last blocks works
+/// let (rest, (block, logic)) = match_block("(hello > 1 && (foo == 2 || foo == 3) )").unwrap();
+/// assert_eq!(block, "hello > 1 && (foo == 2 || foo == 3) ");
+/// assert_eq!(logic, None);
+/// assert_eq!(rest, "");
+/// let (rest, (block, logic)) = match_block("&& (foo == 2 || foo == 3) ").unwrap();
+/// assert_eq!(block, "foo == 2 || foo == 3");
 /// ```
 pub fn match_block(input: &str) -> IResult<&str, (&str, Option<Logic>)> {
     let (rest, (logics, block)) = tuple((
         match_optional_logic,
-        delimited(trim(tag("(")), take_until_unbalanced('(', ')'), tag(")")),
+        delimited(
+            trim(tag("(")),
+            take_until_unbalanced('(', ')'),
+            trim_front(tag(")")),
+        ),
     ))(input)?;
 
     let logic = decode_logic(logics);
@@ -328,6 +350,14 @@ pub fn match_comparisons(input: &str) -> IResult<&str, (Comparison, Option<Logic
 /// Parse `input` recursively and produce a [Sequence] from all children.
 /// This [Sequence] can be thrown against a [crate::solver::solve_tree] using a [crate::resolver::Resolver] to solve the `input`.
 /// Use [crate::evaluate] to have an already implemented combination.
+/// ```
+/// use metrics_evaluation::*;
+///
+/// // Test for weird whitespaces
+/// assert!(parse_tree("hello > 1 && ( foo == 2 || foo == 3)").is_ok());
+/// assert!(parse_tree("hello > 1 && (foo == 2 || foo == 3 )").is_ok());
+/// assert!(parse_tree("hello > 1 && (foo == 2 || foo == 3 ) ").is_ok());
+/// ```
 pub fn parse_tree(input: impl AsRef<str>) -> Result<Sequence> {
     let mut rest: &str = input.as_ref();
     let mut results: Sequence = Sequence::default();
@@ -336,11 +366,11 @@ pub fn parse_tree(input: impl AsRef<str>) -> Result<Sequence> {
         let (block, comparison) = (match_block(rest), match_comparisons(rest));
         match (block, comparison) {
             (Ok((new_rest, (block, logic))), Err(_)) => {
-                rest = new_rest;
+                rest = new_rest.trim();
                 results.items.push(Entity::Child(parse_tree(block)?, logic));
             }
             (Err(_), Ok((new_rest, (comparison, logic)))) => {
-                rest = new_rest;
+                rest = new_rest.trim();
                 results.items.push(Entity::Comparison(comparison, logic));
             }
             _ => {
