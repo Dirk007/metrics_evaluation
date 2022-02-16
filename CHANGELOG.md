@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.6 (2022-02-16; TBD)
+## v0.1.6 (2022-02-16)
 ### Added 
 - feature `lax_comparison`: Lax comparison instread of std `PartialEq` on `Value` which tries some conversions before failing.  If enabled, `String` can be compared to `Bool` and `Numeric` as well as `Numeric` against `Bool`. As this
 behaviour is unexpected for callers, this feature is not enabled by default.
