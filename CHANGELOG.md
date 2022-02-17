@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.7
+### Added
+- moar tests!
+
+### Fixed
+- `panic` with feature `lax_comparison` like PartialEq does on uncompareable components
+
 ## v0.1.6 (2022-02-16)
 ### Added 
 - feature `lax_comparison`: Lax comparison instread of std `PartialEq` on `Value` which tries some conversions before failing.  If enabled, `String` can be compared to `Bool` and `Numeric` as well as `Numeric` against `Bool`. As this
