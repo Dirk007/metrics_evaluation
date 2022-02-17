@@ -1,4 +1,4 @@
-//! This crate provides a small-foorprint solution to evaluate comparisons, expressed as text, with a dynamically value-lookup.
+//! This crate provides a small-footprint solution to evaluate comparisons, expressed as text, with a dynamically value-lookup.
 //!
 //! The comparisons can be written like normal rust-code.
 //! For example:
