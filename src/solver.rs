@@ -115,6 +115,40 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_time() -> Result<()> {
+        use chrono::naive::NaiveTime;
+
+        use crate::evaluate;
+
+        let mut values = HashMap::new();
+        values.insert(
+            "start",
+            Value::Time(NaiveTime::parse_from_str("05:00:00", "%H:%M:%S")?),
+        );
+        values.insert(
+            "now",
+            Value::Time(NaiveTime::parse_from_str("15:00:00", "%H:%M:%S")?),
+        );
+        values.insert(
+            "end",
+            Value::Time(NaiveTime::parse_from_str("22:00:00", "%H:%M:%S")?),
+        );
+        let values = MapResolver::from(values);
+
+        assert_eq!(evaluate(r#"start <= "15:00:00""#, &values)?, true);
+        assert_eq!(evaluate(r#"end >= "15:00:00""#, &values)?, true);
+        assert_eq!(evaluate(r#"now >= "22:00:00""#, &values)?, false);
+        assert_eq!(evaluate(r#"now <= "05:00:00""#, &values)?, false);
+        assert_eq!(
+            evaluate(r#"now >= "22:00:00" || now <= "05:00:00""#, &values)?,
+            false
+        );
+        assert_eq!(evaluate(r#"now >= start && now <= end"#, &values)?, true);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_solve_numeric() -> Result<()> {
         use crate::evaluate;
 
