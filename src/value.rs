@@ -74,7 +74,7 @@ impl PartialEq for Value {
             // Implicit conversion: string vs. bool where a string is the `display` of the bool
             (Value::String(left), Value::Bool(right)) => left == &format!("{}", right),
             (Value::Bool(left), Value::String(right)) => &format!("{}", left) == right,
-            _ => false,
+            _ => panic!("Unable to compare {:?} against {:?}", self, other),
         }
     }
 }

@@ -44,7 +44,9 @@ pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bo
     let lhs = resolve_var(&comparison.lhs, resolver)?;
     let rhs = resolve_var(&comparison.rhs, resolver)?;
 
-    Ok(lhs.compare(&rhs, comparison.operator))
+    let result = lhs.compare(&rhs, comparison.operator);
+
+    Ok(result)
 }
 
 /// Solve a [Sequence] using the given 'resolver' to a final [bool].
@@ -110,6 +112,159 @@ mod tests {
         assert_eq!(evaluate(r#"a < "1 d 1h""#, &values)?, true);
         assert_eq!(evaluate(r#"a > "2h 5min""#, &values)?, true);
         assert_eq!(evaluate(r#"a <= "5h 12min 42sec""#, &values)?, false);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_complex() -> Result<()> {
+        use chrono::naive::NaiveTime;
+
+        use crate::evaluate;
+
+        // Assertion is: Window is open between 09:00 and 22:00 AND
+        //   - the window is open for more than 10 minutes AND the room temperature has droppped below 20 degrees
+        //   OR
+        //   - the window is open for more than 30 minutes
+        //   OR
+        //   - the temperature has dropped below 10 degreesd
+        const QUERY: &str = r#"window.contact.value == false && compute.time.now > "09:00:00" && compute.time.now < "22:00:00" && 
+                    ((window.contact.since > "10min" && room.temperature.value < 20) || window.contact.since > "30min" || room.temperature.value < 10)"#;
+
+        struct Test {
+            pub description: &'static str,
+            pub open: bool,
+            pub open_since_minutes: u64,
+            pub room_tempereature: f64,
+            pub current_time: NaiveTime,
+            pub expected_to_trigger: bool,
+        }
+
+        let tests = [Test {
+            description: "Inside timeframe: window open, but warm enough -> do not trigger",
+            open: true,
+            open_since_minutes: 10,
+            room_tempereature: 21.0,
+            current_time: NaiveTime::from_hms(21, 1, 0),
+            expected_to_trigger: false,
+        },
+        Test {
+            description:
+                "Inside timeframe: window open, warm enough, but open for too long -> trigger",
+            open: true,
+            open_since_minutes: 60,
+            room_tempereature: 21.0,
+            current_time: NaiveTime::from_hms(21, 1, 0),
+            expected_to_trigger: true,
+        },
+        Test {
+            description: "Inside timeframe: window open, open short enough but too cold -> trigger",
+            open: true,
+            open_since_minutes: 10,
+            room_tempereature: 9.0,
+            current_time: NaiveTime::from_hms(21, 1, 0),
+            expected_to_trigger: true,
+        },
+        Test {
+            description:
+                "OUTSIDE timeframe: window open, open short enough but too cold -> do not trigger",
+            open: true,
+            open_since_minutes: 10,
+            room_tempereature: 9.0,
+            current_time: NaiveTime::from_hms(23, 1, 0),
+            expected_to_trigger: false,
+        },
+        Test {
+            description:
+                "OUTSIDE timeframe: window open, open too long and too cold -> do not trigger",
+            open: true,
+            open_since_minutes: 120,
+            room_tempereature: 1.0,
+            current_time: NaiveTime::from_hms(01, 1, 0),
+            expected_to_trigger: false,
+        },
+        Test {
+            description:
+                "INSIDE timeframe: window open, open too long and too cold -> trigger (same as last one but inside timeframe)",
+            open: true,
+            open_since_minutes: 120,
+            room_tempereature: 1.0,
+            current_time: NaiveTime::from_hms(10, 1, 0),
+            expected_to_trigger: true,
+        },
+        Test {
+            description:
+                "INSIDE timeframe: window CLOSED, open too long and too cold -> do not trigger",
+            open: false,
+            open_since_minutes: 120,
+            room_tempereature: 1.0,
+            current_time: NaiveTime::from_hms(10, 1, 0),
+            expected_to_trigger: false,
+        },
+        Test {
+            description:
+                "OUTSIDE timeframe: window open, open short enough and warm enough -> do not trigger",
+            open: true,
+            open_since_minutes: 10,
+            room_tempereature: 30.0,
+            current_time: NaiveTime::from_hms(10, 1, 0),
+            expected_to_trigger: false,
+        }];
+
+        for test in tests {
+            println!("Complex test: {}", test.description);
+            let mut values = HashMap::new();
+            values.insert("window.contact.value", Value::Bool(!test.open));
+            values.insert(
+                "window.contact.since",
+                Value::Duration(core::time::Duration::from_secs(
+                    test.open_since_minutes * 60,
+                )),
+            );
+            values.insert(
+                "room.temperature.value",
+                Value::Numeric(test.room_tempereature),
+            );
+            values.insert("compute.time.now", Value::Time(test.current_time));
+            let values = MapResolver::from(values);
+
+            assert_eq!(evaluate(QUERY, &values)?, test.expected_to_trigger);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_solve_time() -> Result<()> {
+        use chrono::naive::NaiveTime;
+
+        use crate::evaluate;
+
+        let mut values = HashMap::new();
+        values.insert(
+            "start",
+            Value::Time(NaiveTime::parse_from_str("05:00:00", "%H:%M:%S")?),
+        );
+        values.insert(
+            "now",
+            Value::Time(NaiveTime::parse_from_str("15:00:00", "%H:%M:%S")?),
+        );
+        values.insert(
+            "end",
+            Value::Time(NaiveTime::parse_from_str("22:00:00", "%H:%M:%S")?),
+        );
+
+        let values = MapResolver::from(values);
+
+        assert_eq!(evaluate(r#"start <= "15:00:00""#, &values)?, true);
+        assert_eq!(evaluate(r#"end >= "15:00:00""#, &values)?, true);
+        assert_eq!(evaluate(r#"now >= "22:00:00""#, &values)?, false);
+        assert_eq!(evaluate(r#"now <= "05:00:00""#, &values)?, false);
+        assert_eq!(
+            evaluate(r#"now >= "22:00:00" || now <= "05:00:00""#, &values)?,
+            false
+        );
+        assert_eq!(evaluate(r#"now >= start && now <= end"#, &values)?, true);
 
         Ok(())
     }
