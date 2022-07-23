@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "anyhow"
-version = "1.0.53"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
+checksum = "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704"
 
 [[package]]
 name = "async-recursion"
@@ -42,9 +42,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.52"
+version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "061a7acccaa286c011ddc30970520b98fa40e00c9d644633fb26b5fc63a265e3"
+checksum = "96cf8829f67d2eab0b2dfa42c5d0ef737e0724e4a82b01b3e292456202b19716"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -117,7 +117,7 @@ checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "metrics_evaluation"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -140,13 +140,12 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "nom"
-version = "7.1.0"
+version = "7.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b1d11e1ef389c76fe5b81bcaf2ea32cf88b62bc494e19f493d0b30e7a930109"
+checksum = "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36"
 dependencies = [
  "memchr",
  "minimal-lexical",
- "version_check",
 ]
 
 [[package]]
@@ -167,6 +166,12 @@ checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "once_cell"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 
 [[package]]
 name = "parse-hyperlinks"
@@ -194,11 +199,11 @@ checksum = "e280fbe77cc62c91527259e9442153f4688736748d24660126286329742b4c6c"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.36"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7342d5883fbccae1cc37a2353b09c87c9b0f3afd73f5fb9bba687a1f733b029"
+checksum = "dd96a1e8ed2596c337f8eae5f24924ec83f5ad5ab21ea8e455d3566c69fbcaf7"
 dependencies = [
- "unicode-xid",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -212,19 +217,19 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.136"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce31e24b01e1e524df96f1c2fdd054405f8d7376249a5110886fb4b658484789"
+checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
 
 [[package]]
 name = "syn"
-version = "1.0.86"
+version = "1.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a65b3f4ffa0092e9887669db0eae07941f023991ab58ea44da8fe8e2d511c6b"
+checksum = "c50aef8a904de4c23c788f104b7dddc7d6f79c647c7c8ce4cc8f73eb0ca773dd"
 dependencies = [
  "proc-macro2",
  "quote",
- "unicode-xid",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -260,10 +265,12 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.16.1"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c27a64b625de6d309e8c57716ba93021dccf1b3b5c97edd6d3dd2d2135afc0a"
+checksum = "57aec3cfa4c296db7255446efb4928a6be304b431a806216105542a67b6ca82e"
 dependencies = [
+ "autocfg",
+ "once_cell",
  "pin-project-lite",
  "tokio-macros",
 ]
@@ -304,22 +311,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "unicode-xid"
-version = "0.2.2"
+name = "unicode-ident"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
+checksum = "15c61ba63f9235225a22310255a29b806b907c9b8c964bcbd0a2c70f3f2deea7"
 
 [[package]]
 name = "utf8-width"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cf7d77f457ef8dfa11e4cd5933c5ddb5dc52a94664071951219a97710f0a32b"
-
-[[package]]
-name = "version_check"
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "wasi"

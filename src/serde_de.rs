@@ -4,7 +4,7 @@ use std::fmt;
 
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
-use crate::{parser::parse_tree, Sequence};
+use crate::{expr_parser::parse_tree, Sequence};
 
 pub struct SequenceVisitor;
 
@@ -62,10 +62,7 @@ mod tests {
         let seq = Sequence::deserialize(deserializer).expect("Unable to deserialize");
         assert_eq!(
             seq.items[0],
-            Entity::Comparison(
-                Comparison::from(("a", Operator::Greater, Value::Numeric(1.0))),
-                None
-            ),
+            Entity::Comparison(Comparison::from(("a", Operator::Greater, Value::Numeric(1.0))), None),
         );
 
         assert_eq!(

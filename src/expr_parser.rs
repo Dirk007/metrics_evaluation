@@ -39,12 +39,7 @@ fn match_optional_logic(input: &str) -> IResult<&str, Vec<&str>> {
 
 fn match_optional_calculation(input: &str) -> IResult<&str, Vec<&str>> {
     // TODO: isnt there something like `one0`?
-    let (rest, m) = many0(alt((
-        trim(tag("+")),
-        trim(tag("-")),
-        trim(tag("*")),
-        trim(tag("/")),
-    )))(input)?;
+    let (rest, m) = many0(alt((trim(tag("+")), trim(tag("-")), trim(tag("*")), trim(tag("/")))))(input)?;
     Ok((rest, m))
 }
 
@@ -96,9 +91,7 @@ fn match_value_type(input: &str) -> IResult<&str, Value> {
 }
 
 /// Remove whitespaces around
-fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
-    inner: F,
-) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
 where
     F: Fn(&'a str) -> IResult<&'a str, O, E>,
 {
@@ -106,9 +99,7 @@ where
 }
 
 /// Remove trailing whitespace
-fn trim_front<'a, F: 'a, O, E: ParseError<&'a str>>(
-    inner: F,
-) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+fn trim_front<'a, F: 'a, O, E: ParseError<&'a str>>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
 where
     F: Fn(&'a str) -> IResult<&'a str, O, E>,
 {
@@ -147,9 +138,9 @@ fn match_varval_comparison(input: &str) -> IResult<&str, Comparison> {
     Ok((
         rest,
         Comparison {
-            lhs: ComparisonType::Variable(identifier.into(), calcs_lhs),
+            what: ComparisonType::Variable(identifier.into(), calcs_lhs),
             operator: op,
-            rhs: ComparisonType::Value(value, calcs_rhs),
+            against: ComparisonType::Value(value, calcs_rhs),
         },
     ))
 }
@@ -166,9 +157,9 @@ fn match_varvar_comparison(input: &str) -> IResult<&str, Comparison> {
     Ok((
         rest,
         Comparison {
-            lhs: ComparisonType::Variable(lhs.into(), calcs_lhs),
+            what: ComparisonType::Variable(lhs.into(), calcs_lhs),
             operator: op,
-            rhs: ComparisonType::Variable(rhs.into(), calcs_rhs),
+            against: ComparisonType::Variable(rhs.into(), calcs_rhs),
         },
     ))
 }
@@ -198,8 +189,7 @@ fn match_calculations(input: &str) -> IResult<&str, Vec<Calculation>> {
         if arithmetic.is_empty() {
             break;
         }
-        let (new_rest, calculation) =
-            match_value_calculation(rest).or_else(|_| match_variable_calculation(rest))?;
+        let (new_rest, calculation) = match_value_calculation(rest).or_else(|_| match_variable_calculation(rest))?;
 
         result.push(calculation);
         rest = new_rest.trim();
@@ -210,8 +200,7 @@ fn match_calculations(input: &str) -> IResult<&str, Vec<Calculation>> {
 
 fn match_comparison(input: &str) -> IResult<&str, Comparison> {
     // This fails: alt((match_value_comparison, match_variable_comparison))(input)
-    let (rest, comparison) =
-        match_varval_comparison(input).or_else(|_| match_varvar_comparison(input))?;
+    let (rest, comparison) = match_varval_comparison(input).or_else(|_| match_varvar_comparison(input))?;
 
     Ok((rest, comparison))
 }
@@ -221,7 +210,7 @@ fn match_comparison(input: &str) -> IResult<&str, Comparison> {
 /// ```
 /// use metrics_evaluation::{
 ///     compare::{Logic, Operator},
-///     parser::match_block,
+///     expr_parser::match_block,
 /// };
 ///
 /// let (rest, (block, logic)) = match_block(
@@ -264,11 +253,7 @@ fn match_comparison(input: &str) -> IResult<&str, Comparison> {
 pub fn match_block(input: &str) -> IResult<&str, (&str, Option<Logic>)> {
     let (rest, (logics, block)) = tuple((
         match_optional_logic,
-        delimited(
-            trim(tag("(")),
-            take_until_unbalanced('(', ')'),
-            trim_front(tag(")")),
-        ),
+        delimited(trim(tag("(")), take_until_unbalanced('(', ')'), trim_front(tag(")"))),
     ))(input)?;
 
     let logic = decode_logic(logics);
@@ -293,17 +278,17 @@ fn decode_logic(logics: Vec<&str>) -> Option<Logic> {
 /// use metrics_evaluation::{
 ///     calculate::{Arithmetic, Calculation},
 ///     compare::{Comparison, Logic, Operator},
-///     parser::match_comparisons,
+///     expr_parser::match_comparisons,
 ///     value::Value,
 /// };
 ///
 /// let (rest, (cmp, logic)) = match_comparisons("hello > 1 + 2 - foo").unwrap();
 /// let mut expected = Comparison::from(("hello", Operator::Greater, Value::from(1)));
 /// expected
-///     .rhs
+///     .against
 ///     .with_calculation(Calculation::Value(2.into(), Arithmetic::Add));
 /// expected
-///     .rhs
+///     .against
 ///     .with_calculation(Calculation::Variable("foo".into(), Arithmetic::Sub));
 /// assert_eq!(cmp, expected);
 /// assert_eq!(logic, None);

@@ -65,12 +65,8 @@ impl PartialEq for Value {
             (Value::Bool(left), Value::Numeric(right)) => left == &(right != &0f64),
             (Value::Numeric(left), Value::Bool(right)) => &(left != &0f64) == right,
             // Implicit conversion: string vs. numeric where the string must be parseable as `f64`
-            (Value::String(left), Value::Numeric(right)) => {
-                str::parse::<f64>(left).ok().as_ref() == Some(right)
-            }
-            (Value::Numeric(left), Value::String(right)) => {
-                str::parse::<f64>(right).ok().as_ref() == Some(left)
-            }
+            (Value::String(left), Value::Numeric(right)) => str::parse::<f64>(left).ok().as_ref() == Some(right),
+            (Value::Numeric(left), Value::String(right)) => str::parse::<f64>(right).ok().as_ref() == Some(left),
             // Implicit conversion: string vs. bool where a string is the `display` of the bool
             (Value::String(left), Value::Bool(right)) => left == &format!("{}", right),
             (Value::Bool(left), Value::String(right)) => &format!("{}", left) == right,
@@ -80,14 +76,14 @@ impl PartialEq for Value {
 }
 
 impl Compareable for Value {
-    fn compare(&self, rhs: &Self, operator: Operator) -> bool {
+    fn compare(&self, other: &Self, operator: Operator) -> bool {
         match operator {
-            Operator::Equal => self == rhs,
-            Operator::NotEqual => self != rhs,
-            Operator::Greater => self > rhs,
-            Operator::Less => self < rhs,
-            Operator::GreaterEqual => self >= rhs,
-            Operator::LessEqual => self <= rhs,
+            Operator::Equal => self == other,
+            Operator::NotEqual => self != other,
+            Operator::Greater => self > other,
+            Operator::Less => self < other,
+            Operator::GreaterEqual => self >= other,
+            Operator::LessEqual => self <= other,
         }
     }
 }
@@ -120,12 +116,12 @@ impl Compareable for Value {
 /// assert_eq!(bar, Value::Numeric(2.0));
 /// ```
 impl Calculateable for Value {
-    fn calculate(self, rhs: &Self, operator: Arithmetic) -> Result<Self> {
-        match operator {
-            Arithmetic::Add => self + rhs,
-            Arithmetic::Sub => self - rhs,
-            Arithmetic::Mul => self * rhs,
-            Arithmetic::Div => self / rhs,
+    fn calculate(self, value: &Self, arithmetic: Arithmetic) -> Result<Self> {
+        match arithmetic {
+            Arithmetic::Add => self + value,
+            Arithmetic::Sub => self - value,
+            Arithmetic::Mul => self * value,
+            Arithmetic::Div => self / value,
         }
     }
 }
@@ -133,12 +129,10 @@ impl Calculateable for Value {
 impl Add<&Self> for Value {
     type Output = Result<Value>;
 
-    fn add(self, rhs: &Self) -> Self::Output {
-        match (self, rhs) {
+    fn add(self, other: &Self) -> Self::Output {
+        match (self, other) {
             (Value::String(lhs), Value::String(rhs)) => Ok(Value::String(lhs + &rhs)),
-            (Value::String(lhs), Value::Numeric(rhs)) => {
-                Ok(Value::String(format!("{} {}", lhs, rhs)))
-            }
+            (Value::String(lhs), Value::Numeric(rhs)) => Ok(Value::String(format!("{} {}", lhs, rhs))),
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs + rhs)),
             (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs + *rhs)),
             (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
@@ -152,8 +146,8 @@ impl Add<&Self> for Value {
 impl Sub<&Self> for Value {
     type Output = Result<Value>;
 
-    fn sub(self, rhs: &Self) -> Self::Output {
-        match (self, rhs) {
+    fn sub(self, other: &Self) -> Self::Output {
+        match (self, other) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs - rhs)),
             (Value::Duration(lhs), Value::Duration(rhs)) => Ok(Value::Duration(lhs - *rhs)),
             (Value::Time(lhs), Value::Duration(rhs)) => Ok(Value::Time(
@@ -167,12 +161,10 @@ impl Sub<&Self> for Value {
 impl Mul<&Self> for Value {
     type Output = Result<Value>;
 
-    fn mul(self, rhs: &Self) -> Self::Output {
-        match (self, rhs) {
+    fn mul(self, other: &Self) -> Self::Output {
+        match (self, other) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs * rhs)),
-            (Value::Duration(lhs), Value::Numeric(rhs)) => {
-                Ok(Value::Duration(lhs * rhs.round() as u32))
-            }
+            (Value::Duration(lhs), Value::Numeric(rhs)) => Ok(Value::Duration(lhs * rhs.round() as u32)),
             _ => bail!("Incompatible types for multiiplication"),
         }
     }
@@ -181,12 +173,10 @@ impl Mul<&Self> for Value {
 impl Div<&Self> for Value {
     type Output = Result<Value>;
 
-    fn div(self, rhs: &Self) -> Self::Output {
-        match (self, rhs) {
+    fn div(self, other: &Self) -> Self::Output {
+        match (self, other) {
             (Value::Numeric(lhs), Value::Numeric(rhs)) => Ok(Value::Numeric(lhs / rhs)),
-            (Value::Duration(lhs), Value::Numeric(rhs)) => {
-                Ok(Value::Duration(lhs / rhs.round() as u32))
-            }
+            (Value::Duration(lhs), Value::Numeric(rhs)) => Ok(Value::Duration(lhs / rhs.round() as u32)),
             _ => bail!("Incompatible types for division"),
         }
     }
@@ -206,8 +196,8 @@ macro_rules! impl_value {
 impl TryFrom<chrono::Duration> for Value {
     type Error = anyhow::Error;
 
-    fn try_from(value: chrono::Duration) -> Result<Self, Self::Error> {
-        Ok(value.to_std()?.into())
+    fn try_from(duration: chrono::Duration) -> Result<Self, Self::Error> {
+        Ok(duration.to_std()?.into())
     }
 }
 

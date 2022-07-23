@@ -1,6 +1,6 @@
 [package]
 name = "metrics_evaluation"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 description = "Small foot-print parser and solver for (nested) text-based comparisons"
 authors = ["Dirk Faust <dirk@faustbande.de>"]
@@ -13,20 +13,20 @@ name = "metrics_evaluation"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.53"
+anyhow = "1.0.58"
 chrono = "0.4.19"
 humantime = "2.1.0"
-nom = "7.1.0"
+nom = "7.1.1"
 parse-hyperlinks = "0.23.3"
 cfg-if = "1.0.0"
 
 # Async-Deps
-tokio = { version = "1.16.1", features = ["rt", "macros"], optional = true }
-async-trait = { version = "0.1.52", optional = true }
+tokio = { version = "1.20.0", features = ["rt", "macros"], optional = true }
+async-trait = { version = "0.1.56", optional = true }
 async-recursion = { version = "1.0.0", optional = true }
 
 # Serde_de-Deps
-serde = { version = "1.0.136", optional = true }
+serde = { version = "1.0.139", optional = true }
 
 [dev-dependencies]
 tokio-test = { version = "0.4.2" }
@@ -39,3 +39,7 @@ async = ["tokio", "async-trait", "async-recursion"]
 serde_de = ["serde"]
 # Enbale extra lax comparisons where some implicit conversions can take place
 lax_comparison = []
+
+[[example]]
+name = "simple"
+path = "examples/simple/src/main.rs"

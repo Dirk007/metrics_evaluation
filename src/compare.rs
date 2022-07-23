@@ -20,8 +20,8 @@ pub enum Operator {
 
 /// Helper to bind `compare` with our custom [Operator] to a struct
 pub trait Compareable {
-    /// Compare self with rhs using the given [Operator]
-    fn compare(&self, rhs: &Self, operator: Operator) -> bool;
+    /// Compare self with `against` using the given [Operator]
+    fn compare(&self, other: &Self, operator: Operator) -> bool;
 }
 
 /// Defines if a comparison is against a value or against another variable
@@ -34,10 +34,10 @@ pub enum ComparisonType {
 }
 
 impl ComparisonType {
-    pub fn with_calculation(&mut self, calc: Calculation) {
+    pub fn with_calculation(&mut self, calculation: Calculation) {
         match self {
-            Self::Value(_, calcs) => calcs.push(calc),
-            Self::Variable(_, calcs) => calcs.push(calc),
+            Self::Value(_, calculations) => calculations.push(calculation),
+            Self::Variable(_, calculations) => calculations.push(calculation),
         }
     }
 }
@@ -45,31 +45,31 @@ impl ComparisonType {
 #[derive(Debug, PartialEq)]
 pub struct Comparison {
     /// Left-Hand-Side of the comparison (which the rhs will be compared to)
-    pub lhs: ComparisonType,
+    pub what: ComparisonType,
     /// [Operator] to use for the comparison
     pub operator: Operator,
     /// Right-Hand-Side to compare the content of `lhs` to
-    pub rhs: ComparisonType,
+    pub against: ComparisonType,
 }
 
-/// Triplet to [Comparison] conversion
+/// Triplet (variable-name, operator, value) to [Comparison] conversion
 impl From<(&str, Operator, Value)> for Comparison {
-    fn from((name, operator, value): (&str, Operator, Value)) -> Self {
+    fn from((variable_name, operator, value): (&str, Operator, Value)) -> Self {
         Self {
-            lhs: ComparisonType::Variable(name.into(), Vec::new()),
+            what: ComparisonType::Variable(variable_name.into(), Vec::new()),
             operator,
-            rhs: ComparisonType::Value(value, Vec::new()),
+            against: ComparisonType::Value(value, Vec::new()),
         }
     }
 }
 
-/// Triplet to [Comparison] conversion
+/// Triplet (variable-name, operator, variable-name) to [Comparison] conversion
 impl From<(&str, Operator, &str)> for Comparison {
-    fn from((name, operator, rhs): (&str, Operator, &str)) -> Self {
+    fn from((variable_name, operator, against_variable_name): (&str, Operator, &str)) -> Self {
         Self {
-            lhs: ComparisonType::Variable(name.into(), Vec::new()),
+            what: ComparisonType::Variable(variable_name.into(), Vec::new()),
             operator,
-            rhs: ComparisonType::Variable(rhs.into(), Vec::new()),
+            against: ComparisonType::Variable(against_variable_name.into(), Vec::new()),
         }
     }
 }

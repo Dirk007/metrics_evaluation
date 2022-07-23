@@ -17,7 +17,7 @@ where
         Self {
             0: map
                 .into_iter()
-                .map(|(k, v)| (k.as_ref().into(), Value::from(v)))
+                .map(|(variable_name, value)| (variable_name.as_ref().into(), Value::from(value)))
                 .collect(),
         }
     }

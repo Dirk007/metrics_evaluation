@@ -8,43 +8,39 @@ use crate::{
     Calculateable, Calculation,
 };
 
-fn produce_final_value(
-    value: Value,
-    calculations: &Vec<Calculation>,
-    resolver: &impl Resolver,
-) -> Result<Value> {
-    let mut current = value;
-    for ref item in calculations {
-        let (v, a) = match item {
-            Calculation::Value(v, op) => (Some(v), op),
-            Calculation::Variable(name, op) => (resolver.resolve(name), op),
+fn produce_final_value(input_value: Value, calculations: &Vec<Calculation>, resolver: &impl Resolver) -> Result<Value> {
+    let mut current = input_value;
+    for item in calculations {
+        let (item_value, item_arithmetic) = match item {
+            Calculation::Value(value, artihmetic) => (Some(value), artihmetic),
+            Calculation::Variable(name, artihmetic) => (resolver.resolve(name), artihmetic),
         };
 
-        let v = v.ok_or_else(|| anyhow!("Unable to resolve variable {:?}", item))?;
+        let value = item_value.ok_or_else(|| anyhow!("Unable to resolve variable {:?}", item))?;
 
-        current = current.calculate(v, *a)?;
+        current = current.calculate(value, *item_arithmetic)?;
     }
 
     Ok(current)
 }
 
 fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<Value> {
-    let (value, calc) = match comparison {
-        ComparisonType::Value(ref value, ref calculations) => (Some(value), calculations),
-        ComparisonType::Variable(ref lhs, ref calculations) => {
-            (resolver.resolve(lhs), calculations)
+    let (item_value, item_calculations) = match comparison {
+        ComparisonType::Value(ref value, ref value_calculations) => (Some(value), value_calculations),
+        ComparisonType::Variable(ref variable_name, ref variable_calculations) => {
+            (resolver.resolve(variable_name), variable_calculations)
         }
     };
 
-    let value = value.ok_or_else(|| anyhow!("unable to resolve lhs in {:?}", comparison))?;
-    Ok(produce_final_value(value.clone(), calc, resolver)?)
+    let value = item_value.ok_or_else(|| anyhow!("unable to resolve lhs in {:?}", comparison))?;
+    Ok(produce_final_value(value.clone(), item_calculations, resolver)?)
 }
 
 pub fn solve_one(comparison: &Comparison, resolver: &impl Resolver) -> Result<bool> {
-    let lhs = resolve_var(&comparison.lhs, resolver)?;
-    let rhs = resolve_var(&comparison.rhs, resolver)?;
+    let left_value = resolve_var(&comparison.what, resolver)?;
+    let right_value = resolve_var(&comparison.against, resolver)?;
 
-    let result = lhs.compare(&rhs, comparison.operator);
+    let result = left_value.compare(&right_value, comparison.operator);
 
     Ok(result)
 }
@@ -217,14 +213,9 @@ mod tests {
             values.insert("window.contact.value", Value::Bool(!test.open));
             values.insert(
                 "window.contact.since",
-                Value::Duration(core::time::Duration::from_secs(
-                    test.open_since_minutes * 60,
-                )),
+                Value::Duration(core::time::Duration::from_secs(test.open_since_minutes * 60)),
             );
-            values.insert(
-                "room.temperature.value",
-                Value::Numeric(test.room_tempereature),
-            );
+            values.insert("room.temperature.value", Value::Numeric(test.room_tempereature));
             values.insert("compute.time.now", Value::Time(test.current_time));
             let values = MapResolver::from(values);
 
@@ -241,18 +232,9 @@ mod tests {
         use crate::evaluate;
 
         let mut values = HashMap::new();
-        values.insert(
-            "start",
-            Value::Time(NaiveTime::parse_from_str("05:00:00", "%H:%M:%S")?),
-        );
-        values.insert(
-            "now",
-            Value::Time(NaiveTime::parse_from_str("15:00:00", "%H:%M:%S")?),
-        );
-        values.insert(
-            "end",
-            Value::Time(NaiveTime::parse_from_str("22:00:00", "%H:%M:%S")?),
-        );
+        values.insert("start", Value::Time(NaiveTime::parse_from_str("05:00:00", "%H:%M:%S")?));
+        values.insert("now", Value::Time(NaiveTime::parse_from_str("15:00:00", "%H:%M:%S")?));
+        values.insert("end", Value::Time(NaiveTime::parse_from_str("22:00:00", "%H:%M:%S")?));
 
         let values = MapResolver::from(values);
 
@@ -260,10 +242,7 @@ mod tests {
         assert_eq!(evaluate(r#"end >= "15:00:00""#, &values)?, true);
         assert_eq!(evaluate(r#"now >= "22:00:00""#, &values)?, false);
         assert_eq!(evaluate(r#"now <= "05:00:00""#, &values)?, false);
-        assert_eq!(
-            evaluate(r#"now >= "22:00:00" || now <= "05:00:00""#, &values)?,
-            false
-        );
+        assert_eq!(evaluate(r#"now >= "22:00:00" || now <= "05:00:00""#, &values)?, false);
         assert_eq!(evaluate(r#"now >= start && now <= end"#, &values)?, true);
 
         Ok(())
@@ -286,17 +265,11 @@ mod tests {
         assert_eq!(evaluate("c >= 3", &values)?, true);
         assert_eq!(evaluate("a != 99 && (b == 2 || c == 99)", &values)?, true);
         assert_eq!(
-            evaluate(
-                "a == 42 || ((b == 2 || b == 3) && (c == 3 || c == 4))",
-                &values
-            )?,
+            evaluate("a == 42 || ((b == 2 || b == 3) && (c == 3 || c == 4))", &values)?,
             true
         );
         assert_eq!(
-            evaluate(
-                "a == 4711 || ((b == 42 || b == 2) && (c == 3 && c == 4))",
-                &values
-            )?,
+            evaluate("a == 4711 || ((b == 42 || b == 2) && (c == 3 && c == 4))", &values)?,
             false
         );
 
