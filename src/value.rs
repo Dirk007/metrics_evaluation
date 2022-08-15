@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     ops::{Add, Div, Mul, Sub},
     time::Duration,
 };
@@ -26,6 +27,18 @@ pub enum Value {
     Time(NaiveTime),
     /// A duration in time
     Duration(Duration),
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            &Self::String(s) => write!(f, "{}", s),
+            &Self::Numeric(d) => write!(f, "{}", d),
+            &Self::Bool(b) => write!(f, "{}", b),
+            &Self::Time(t) => write!(f, "{}", t),
+            &Self::Duration(d) => write!(f, "{:?}", d),
+        }
+    }
 }
 
 #[cfg(feature = "lax_comparison")]
