@@ -4,7 +4,7 @@
 //! For example:
 //!
 //! ```foo + 2 > 2 && bar != 42 || (baz == 47111 && barg * 42 <= 99) && foo >= bar - 5```.
-//! 
+//!
 //! The only limitation at the moment is that you currently have to use a variable-name on the left-hand (WIP). Left-Hand values are not supported yet.
 //!
 //! Comparisons can be made against any [Value]-Type implemented:
@@ -31,10 +31,10 @@ use anyhow::Result;
 pub mod calculate;
 /// Compare [Value] against [Value]
 pub mod compare;
+/// Parser to generate [Sequence] from a given text
+pub mod expr_parser;
 /// Helper-Object to use [std::collections::HashMap] as [Resolver]
 pub mod mapresolver;
-/// Parser to generate [Sequence] from a given text
-pub mod parser;
 /// Resolves name to [Value]
 pub mod resolver;
 /// Sequence of comparisons
@@ -45,8 +45,8 @@ pub mod solver;
 pub mod value;
 
 pub use calculate::{Arithmetic, Calculateable, Calculation};
+pub use expr_parser::parse_tree;
 pub use mapresolver::MapResolver;
-pub use parser::parse_tree;
 pub use resolver::Resolver;
 pub use sequence::Sequence;
 pub use solver::solve_tree;
@@ -57,11 +57,8 @@ pub use value::Value;
 /// Use this if the input-sequence is changing on the same logic. To have a better performing solution where
 /// input-sequences do not change and where you just want to check a given logic against changing metrics, save the
 /// output of [parse_tree] and throw it towards a value-changing [Resolver] in a [solve_tree] when needed.
-pub fn evaluate<'a>(
-    sequence: impl AsRef<str>,
-    resolver: &'a impl resolver::Resolver,
-) -> Result<bool> {
-    let comparisons = parser::parse_tree(sequence)?;
+pub fn evaluate<'a>(sequence: impl AsRef<str>, resolver: &'a impl resolver::Resolver) -> Result<bool> {
+    let comparisons = expr_parser::parse_tree(sequence)?;
     solver::solve_tree(&comparisons, resolver)
 }
 
@@ -82,6 +79,6 @@ pub async fn evaluate_async<'a>(
     sequence: impl AsRef<str>,
     resolver: &'a impl async_resolver::AsyncResolver,
 ) -> Result<bool> {
-    let comparisons = parser::parse_tree(sequence)?;
+    let comparisons = expr_parser::parse_tree(sequence)?;
     async_solver::solve_tree(&comparisons, resolver).await
 }

@@ -24,5 +24,5 @@ pub enum Calculation {
 
 /// Trait to guarantee that a given type is calculateable with [Arithmetic]
 pub trait Calculateable: Sized {
-    fn calculate(self, rhs: &Self, operator: Arithmetic) -> Result<Self>;
+    fn calculate(self, value: &Self, arithmetic: Arithmetic) -> Result<Self>;
 }

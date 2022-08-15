@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 metrics_evaluation = { path = "../.." }
 
-anyhow = "1.0.53"
+anyhow = "1.0.58"
 chrono = "0.4.19"
 humantime = "2.1.0"

@@ -39,10 +39,7 @@ fn main() -> Result<()> {
 
     assert_eq!(evaluate(r#"room1.temp + 2 == room2.temp"#, &values)?, true);
 
-    assert_eq!(
-        evaluate(r#"room2.temp - 1  < room1.temp * 2"#, &values)?,
-        true
-    );
+    assert_eq!(evaluate(r#"room2.temp - 1  < room1.temp * 2"#, &values)?, true);
 
     Ok(())
 }
