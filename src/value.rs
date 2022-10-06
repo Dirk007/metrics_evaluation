@@ -6,6 +6,8 @@ use std::{
 
 use anyhow::{bail, Result};
 use chrono::naive::NaiveTime;
+#[cfg(feature = "serde_de")]
+use serde::{Deserialize, Serialize};
 
 use crate::{
     calculate::{Arithmetic, Calculateable},
@@ -14,6 +16,7 @@ use crate::{
 
 /// Representation of different value types for use in comparisons.
 /// Is [Compareable] and [Calculateable].
+#[cfg_attr(feature = "serde_de", derive(Deserialize, Serialize))]
 #[cfg_attr(not(feature = "lax_comparison"), derive(PartialEq))]
 #[derive(Debug, PartialOrd, Clone)]
 pub enum Value {
