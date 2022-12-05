@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::{anyhow, Result};
 
 use crate::{
@@ -12,13 +14,13 @@ fn produce_final_value(input_value: Value, calculations: &Vec<Calculation>, reso
     let mut current = input_value;
     for item in calculations {
         let (item_value, item_arithmetic) = match item {
-            Calculation::Value(value, artihmetic) => (Some(value), artihmetic),
+            Calculation::Value(value, artihmetic) => (Some(value.clone()), artihmetic),
             Calculation::Variable(name, artihmetic) => (resolver.resolve(name), artihmetic),
         };
 
         let value = item_value.ok_or_else(|| anyhow!("Unable to resolve variable {:?}", item))?;
 
-        current = current.calculate(value, *item_arithmetic)?;
+        current = current.calculate(&value, *item_arithmetic)?;
     }
 
     Ok(current)
@@ -26,7 +28,7 @@ fn produce_final_value(input_value: Value, calculations: &Vec<Calculation>, reso
 
 fn resolve_var(comparison: &ComparisonType, resolver: &impl Resolver) -> Result<Value> {
     let (item_value, item_calculations) = match comparison {
-        ComparisonType::Value(ref value, ref value_calculations) => (Some(value), value_calculations),
+        ComparisonType::Value(ref value, ref value_calculations) => (Some(value.clone()), value_calculations),
         ComparisonType::Variable(ref variable_name, ref variable_calculations) => {
             (resolver.resolve(variable_name), variable_calculations)
         }

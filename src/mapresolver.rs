@@ -24,8 +24,8 @@ where
 }
 
 impl Resolver for MapResolver {
-    fn resolve(&self, name: impl AsRef<str>) -> Option<&Value> {
-        self.0.get(name.as_ref()).map(|value| value)
+    fn resolve(&self, name: impl AsRef<str>) -> Option<Value> {
+        self.0.get(name.as_ref()).map(|value| value.clone())
     }
 }
 
