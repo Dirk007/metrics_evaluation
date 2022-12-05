@@ -14,6 +14,9 @@ use crate::{
     compare::{Compareable, Operator},
 };
 
+const TRUE: &str = "true";
+const FALSE: &str = "false";
+
 /// Representation of different value types for use in comparisons.
 /// Is [Compareable] and [Calculateable].
 #[cfg_attr(feature = "serde_de", derive(Deserialize, Serialize))]
@@ -30,6 +33,43 @@ pub enum Value {
     Time(NaiveTime),
     /// A duration in time
     Duration(Duration),
+}
+
+impl std::str::FromStr for Value {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_value_str(s)
+    }
+}
+
+fn duration_from_str(value: &str) -> Result<Value> {
+    Ok(Value::Duration(humantime::parse_duration(value)?))
+}
+
+fn time_from_str(value: &str) -> Result<Value> {
+    Ok(Value::Time(NaiveTime::parse_from_str(value, "%H:%M:%S")?))
+}
+
+/// Parse a value that is surrounded by ' or ".
+/// Can result into a Duration, Time or at least to a string if everything else fails.
+pub fn parse_string_value(value: &str) -> Value {
+    let value = value.trim_end_matches(['\'', '"']).trim_start_matches(['\'', '"']);
+    return duration_from_str(value)
+        .or_else(|_| time_from_str(value))
+        .unwrap_or_else(|_| Value::String(value.trim().into()));
+}
+
+/// Parses a str into a Value.
+pub fn parse_value_str(value: &str) -> Result<Value> {
+    if value.starts_with(['"', '\'']) && value.ends_with(['"', '\'']) {
+        return Ok(parse_string_value(value));
+    }
+
+    match value {
+        TRUE => Ok(Value::Bool(true)),
+        FALSE => Ok(Value::Bool(false)),
+        _ => Ok(str::parse::<f64>(value).and_then(|value| Ok(Value::Numeric(value)))?),
+    }
 }
 
 impl Display for Value {

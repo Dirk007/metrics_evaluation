@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use chrono::naive::NaiveTime;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag},
@@ -14,17 +13,27 @@ use nom::{
     IResult,
 };
 use parse_hyperlinks::take_until_unbalanced;
+#[cfg(feature = "serde_de")]
+use serde::de::{Deserialize, Deserializer};
 
 use crate::{
     calculate::Arithmetic,
     compare::{Comparison, ComparisonType, Logic, Operator},
     sequence::{Entity, Sequence},
-    value::Value,
+    value::{parse_string_value, Value},
     Calculation,
 };
 
-const TRUE: &str = "true";
-const FALSE: &str = "false";
+/// A serde deserializer for [Sequence]
+#[cfg(feature = "serde_de")]
+pub fn deserialize_sequence<'de, D>(deserializer: D) -> Result<Sequence, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let buf = String::deserialize(deserializer)?;
+
+    parse_tree(&buf).map_err(serde::de::Error::custom)
+}
 
 fn match_optional_logic(input: &str) -> IResult<&str, Vec<&str>> {
     // TODO: isnt there something like `one0`?
@@ -52,41 +61,35 @@ fn match_identifier(input: &str) -> IResult<&str, &str> {
 }
 
 fn match_value(input: &str) -> IResult<&str, Value> {
-    let (rest, value) = recognize(many1(alphanumeric1))(input)?;
+    let (rest, value) = alt((
+        recognize(many1(alphanumeric1)),
+        delimited(tag("("), recognize(many1(is_not("\""))), tag(")")),
+    ))(input)?;
 
-    let value = match value {
-        TRUE => true.into(),
-        FALSE => false.into(),
-        _ => str::parse::<f64>(value)
-            .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?
-            .into(),
-    };
-
-    Ok((rest, value))
+    Ok((
+        rest,
+        value
+            .parse::<Value>()
+            .map_err(|_| nom::Err::Incomplete(nom::Needed::Unknown))?,
+    ))
 }
 
 fn match_string_literal(input: &str) -> IResult<&str, &str> {
-    let (rest, m) = recognize(delimited(
-        alt((char('"'), char('\''))),
-        many1(is_not("\"")),
-        alt((char('"'), char('\''))),
-    ))(input)?;
+    let (rest, m) = recognize(delimited(char('"'), many1(is_not("\"")), char('"')))(input)?;
     Ok((rest, &m[1..m.len() - 1]))
 }
 
 fn match_string_type(input: &str) -> IResult<&str, Value> {
     let (rest, value) = match_string_literal(input)?;
 
-    let value = humantime::parse_duration(value)
-        .map(|duration| Value::from(duration))
-        .or_else(|_| NaiveTime::parse_from_str(&value, "%H:%M:%S").map(|time| Value::from(time)))
-        .unwrap_or_else(|_| Value::from(value));
+    let value = parse_string_value(value);
 
     Ok((rest, value))
 }
 
 fn match_value_type(input: &str) -> IResult<&str, Value> {
     let (rest, value) = alt((match_value, match_string_type))(input)?;
+    //let (rest, value) = match_value(input)?;
     Ok((rest, value))
 }
 

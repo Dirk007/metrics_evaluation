@@ -4,7 +4,7 @@
 //! For example:
 //!
 //! ```foo + 2 > 2 && bar != 42 || (baz == 47111 && barg * 42 <= 99) && foo >= bar - 5```.
-//!
+//! 
 //! The only limitation at the moment is that you currently have to use a variable-name on the left-hand (WIP). Left-Hand values are not supported yet.
 //!
 //! Comparisons can be made against any [Value]-Type implemented:
@@ -45,6 +45,8 @@ pub mod solver;
 pub mod value;
 
 pub use calculate::{Arithmetic, Calculateable, Calculation};
+#[cfg(feature = "serde_de")]
+pub use expr_parser::deserialize_sequence;
 pub use expr_parser::parse_tree;
 pub use mapresolver::MapResolver;
 pub use resolver::Resolver;
@@ -62,16 +64,16 @@ pub fn evaluate<'a>(sequence: impl AsRef<str>, resolver: &'a impl resolver::Reso
     solver::solve_tree(&comparisons, resolver)
 }
 
-/// A serde deserializer for [Sequence]
-#[cfg(feature = "serde_de")]
-pub mod serde_de;
-
 #[cfg(feature = "async")]
 pub mod async_resolver;
 #[cfg(feature = "async")]
 pub mod async_solver;
 #[cfg(feature = "async")]
 pub use async_resolver::AsyncResolver;
+
+/// A serde deserializer for [Sequence]
+#[cfg(feature = "serde_de")]
+pub mod serde_de;
 
 #[cfg(feature = "async")]
 /// Async-version of 'evaluate'
