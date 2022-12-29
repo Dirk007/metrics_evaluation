@@ -13,20 +13,20 @@ name = "metrics_evaluation"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.58"
-chrono = { version = "0.4.19", features = ["serde"] }
+anyhow = "1.0.66"
+chrono = { version = "0.4.23", features = ["serde"] }
 humantime = "2.1.0"
 nom = "7.1.1"
-parse-hyperlinks = "0.23.3"
+parse-hyperlinks = "0.23.4"
 cfg-if = "1.0.0"
 
 # Async-Deps
-tokio = { version = "1.20.0", features = ["rt", "macros"], optional = true }
-async-trait = { version = "0.1.56", optional = true }
+tokio = { version = "1.22.0", features = ["rt", "macros"], optional = true }
+async-trait = { version = "0.1.59", optional = true }
 async-recursion = { version = "1.0.0", optional = true }
 
 # Serde_de-Deps
-serde = { version = "1.0.139", features = ["derive"],  optional = true }
+serde = { version = "1.0.148", features = ["derive"],  optional = true }
 
 [dev-dependencies]
 tokio-test = { version = "0.4.2" }
