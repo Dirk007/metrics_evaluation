@@ -6,6 +6,7 @@ use crate::{resolver::Resolver, value::Value};
 /// To make this possible, [From] (AsRef(str), V) is implememnted for each V that is [Into]::[Value].
 /// In other words: a HashMap containing a key that is [AsRef]::[str] and a value-type that can be converted to
 /// a [Value] ([Value]::[From]::V) can be used as a [Resolver].
+#[derive(Debug, Default)]
 pub struct MapResolver(HashMap<String, Value>);
 
 impl<K, V> From<HashMap<K, V>> for MapResolver
@@ -24,7 +25,7 @@ where
 }
 
 impl Resolver for MapResolver {
-    fn resolve(&self, name: impl AsRef<str>) -> Option<Value> {
+    fn resolve<T: AsRef<str>>(&self, name: &T) -> Option<Value> {
         self.0.get(name.as_ref()).map(|value| value.clone())
     }
 }
